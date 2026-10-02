@@ -201,6 +201,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 #mic { position: fixed; top: 12px; right: 12px; font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ff7aa8; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 #mic[aria-pressed="true"] { background: rgba(10, 8, 30, .75); color: #fff; }
 #micInfo { position: fixed; top: 54px; right: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); padding: 5px 10px; border-radius: 6px; }
+.lang:empty { display: none; }
+#prep { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ffd23f; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 #mic:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 #setup { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; font: 15px/1.7 "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif; display: flex; flex-direction: column; gap: 16px; }
@@ -262,6 +264,12 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         </select>
       </label>
     </div>
+    <label>翻訳の方式
+      <select id="fEngine">
+        <option value="builtin">Chrome内蔵（おすすめ）</option>
+        <option value="legacy">従来の方式（比較用）</option>
+      </select>
+    </label>
     <label class="inline"><input type="checkbox" id="fForeign"> 翻訳先と同じ言語のコメントは表示しない</label>
     <label class="inline"><input type="checkbox" id="fOrig" checked> 原文も表示する</label>
     <label class="inline"><input type="checkbox" id="fSub" checked> 音声字幕を使う（このパソコンのマイクを使います）</label>
@@ -291,9 +299,9 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       <textarea id="fUrl" readonly></textarea>
     </label>
     <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
-    <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、このURLを貼ります。幅1920、高さ1080がおすすめです。</p>
-    <p class="hint">音声字幕をOBSに出すには、Chromeで「プレビューを開く」を押して「字幕を開始」にしたまま配信します。Chromeで拾った字幕が、このURLを貼ったOBSの画面に送られます。URLは他の人に見せないでください。</p>
-    <p class="hint" id="ver">バージョン 5</p>
+    <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
+    <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
+    <p class="hint" id="ver">バージョン 6</p>
   </form>
 </div>
 
@@ -308,6 +316,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 <div id="status" hidden></div>
 <button type="button" id="mic" aria-pressed="false" hidden>字幕を開始</button>
 <div id="micInfo" hidden></div>
+<button type="button" id="prep" hidden></button>
 
 <script>
 (function () {
@@ -348,13 +357,15 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       q.set('scale', $('fScale').value);
       if ($('fForeign').checked) q.set('foreign', '1');
       if (!$('fOrig').checked) q.set('orig', '0');
-      if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); q.set('room', room); }
+      if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
+      q.set('room', room);
+      if ($('fEngine').value === 'legacy') q.set('engine', 'legacy');
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '5');
+      q.set('v', '6');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
-      var b = build({});
+      var b = build({ role: 'obs' });
       $('fUrl').value = b.ch ? b.url : 'チャンネル名を入れるとURLが出ます';
     }
     $('form').addEventListener('input', refresh);
@@ -394,7 +405,16 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
 
   /* ---- 翻訳（キュー・キャッシュ付き） ---- */
+  var isObs = P.get('role') === 'obs';
+  var hasBuiltin = ('Translator' in self) && ('LanguageDetector' in self);
+  var engineName = P.get('engine') === 'legacy' ? 'legacy' : (hasBuiltin ? 'builtin' : 'fallback');
   var cache = new Map(), queue = [], active = 0;
+  function bl(code) {
+    code = String(code || '');
+    if (/^zh-(TW|HK|Hant)/i.test(code)) return 'zh-Hant';
+    return code.split('-')[0].toLowerCase();
+  }
+  /* 従来の方式（非公式の経路。比較用と、内蔵翻訳が使えないブラウザ用） */
   function fetchTranslate(text, tl) {
     var ctl = new AbortController();
     var tm = setTimeout(function () { ctl.abort(); }, 6000);
@@ -408,13 +428,98 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       return { t: d[0].map(function (s) { return (s && s[0]) || ''; }).join(''), src: String(d[2] || '') };
     }).finally(function () { clearTimeout(tm); });
   }
-  function translate(text, tl) {
+  /* Chrome内蔵の翻訳（パソコン内で処理。費用がかからない） */
+  var detector = null, translators = {}, pendingTr = {}, needClick = {}, needDet = false, prepBusy = false;
+  var prepBtn = document.getElementById('prep');
+  function prepUI() {
+    var n = Object.keys(needClick).length + (needDet ? 1 : 0);
+    prepBtn.hidden = isObs || prepBusy || n === 0;
+    prepBtn.textContent = '翻訳データを入手する（' + n + '件・初回のみ）';
+  }
+  function quickLang(text) {
+    if (/[぀-ヿ]/.test(text)) return 'ja';
+    if (/[가-힯]/.test(text)) return 'ko';
+    if (/[฀-๿]/.test(text)) return 'th';
+    return '';
+  }
+  function detectLang(text) {
+    var q = quickLang(text);
+    if (q) return Promise.resolve(q);
+    if (!detector) return Promise.resolve('');
+    return detector.detect(text).then(function (r) {
+      var top = r && r[0];
+      if (!top || top.detectedLanguage === 'und' || top.confidence < 0.5) return '';
+      return bl(top.detectedLanguage);
+    }, function () { return ''; });
+  }
+  function createTranslator(src, tl) {
+    var key = src + '>' + tl;
+    return Translator.create({ sourceLanguage: src, targetLanguage: tl }).then(function (t) {
+      translators[key] = t; delete needClick[key]; prepUI(); return t;
+    }, function (e) {
+      if (e && e.name === 'NotAllowedError') { needClick[key] = [src, tl]; prepUI(); }
+      throw e;
+    });
+  }
+  function getTranslator(src, tl) {
+    var key = src + '>' + tl;
+    if (key in translators) return translators[key] ? Promise.resolve(translators[key]) : Promise.reject(new Error('unavailable'));
+    if (pendingTr[key]) return pendingTr[key];
+    var pr = Translator.availability({ sourceLanguage: src, targetLanguage: tl }).then(function (a) {
+      if (a === 'unavailable') { translators[key] = null; throw new Error('unavailable'); }
+      return createTranslator(src, tl);
+    });
+    pendingTr[key] = pr;
+    pr.then(function () { delete pendingTr[key]; }, function () { delete pendingTr[key]; });
+    return pr;
+  }
+  function builtinTranslate(text, tl, srcHint) {
+    tl = bl(tl);
+    return (srcHint ? Promise.resolve(bl(srcHint)) : detectLang(text)).then(function (src) {
+      if (!src || src === tl) return { t: text, src: src };
+      return getTranslator(src, tl).then(function (tr) { return tr.translate(text); }).then(
+        function (out) { return { t: String(out || ''), src: src }; },
+        function () { return { t: text, src: src, fail: true }; });
+    });
+  }
+  function initBuiltin() {
+    var tl = bl(cfg.tl), pairs = [];
+    ['en', 'es', 'pt', 'ko', 'zh', 'fr', 'de', 'ru', 'id', 'th', 'ja'].forEach(function (src) { if (src !== tl) pairs.push([src, tl]); });
+    var sp = bl(P.get('speak') || 'ja-JP'), st = bl(P.get('sublang') || 'en');
+    if (P.get('sub') === '1' && sp !== st) pairs.push([sp, st]);
+    LanguageDetector.availability().then(function (a) {
+      if (a === 'available') return LanguageDetector.create().then(function (d) { detector = d; });
+      if (a !== 'unavailable') { needDet = true; prepUI(); }
+    }).catch(function () {});
+    pairs.forEach(function (pr) {
+      Translator.availability({ sourceLanguage: pr[0], targetLanguage: pr[1] }).then(function (a) {
+        if (a === 'available') getTranslator(pr[0], pr[1]).catch(function () {});
+        else if (a !== 'unavailable') { needClick[pr[0] + '>' + pr[1]] = pr; prepUI(); }
+      }).catch(function () {});
+    });
+    prepBtn.addEventListener('click', function () {
+      /* クリックの直後にまとめて開始する（ダウンロードの開始には利用者の操作が必要なため） */
+      var jobs = [];
+      if (needDet) jobs.push(LanguageDetector.create().then(function (d) { detector = d; needDet = false; }));
+      Object.keys(needClick).forEach(function (k) { jobs.push(createTranslator(needClick[k][0], needClick[k][1])); });
+      var total = jobs.length, done = 0;
+      prepBusy = true; prepUI();
+      status('翻訳データを入手中 0/' + total + '（数分かかることがあります）');
+      Promise.all(jobs.map(function (j) {
+        return j.catch(function () {}).then(function () { done++; status('翻訳データを入手中 ' + done + '/' + total); });
+      })).then(function () {
+        prepBusy = false; cache.clear(); prepUI();
+        status(prepBtn.hidden ? '翻訳の準備ができました' : '一部の翻訳データを入手できませんでした。もう一度押してください。', true);
+      });
+    });
+  }
+  function translate(text, tl, srcHint) {
     tl = tl || cfg.tl;
     var key = tl + '|' + text;
     if (cache.has(key)) return Promise.resolve(cache.get(key));
     return new Promise(function (resolve, reject) {
       if (queue.length >= 20) queue.shift().reject(new Error('dropped'));
-      queue.push({ text: text, tl: tl, key: key, resolve: resolve, reject: reject });
+      queue.push({ text: text, tl: tl, src: srcHint, key: key, resolve: resolve, reject: reject });
       pump();
     });
   }
@@ -422,17 +527,27 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     while (active < 3 && queue.length) {
       (function (job) {
         active++;
-        fetchTranslate(job.text, job.tl).then(function (r) {
-          if (cache.size > 300) cache.delete(cache.keys().next().value);
-          cache.set(job.key, r); job.resolve(r);
+        (engineName === 'builtin' ? builtinTranslate(job.text, job.tl, job.src) : fetchTranslate(job.text, job.tl)).then(function (r) {
+          if (!r.fail) {
+            if (cache.size > 300) cache.delete(cache.keys().next().value);
+            cache.set(job.key, r);
+          }
+          job.resolve(r);
         }, job.reject).finally(function () { active--; pump(); });
       })(queue.shift());
     }
   }
-  function sameLang(res, text) {
-    return res.src.split('-')[0].toLowerCase() === cfg.tl.split('-')[0].toLowerCase() || res.t.trim() === text.trim();
+  function langCode(src) { return (src.split('-')[0] || '').toUpperCase().slice(0, 3); }
+  /* 翻訳結果から、表示する言語ラベル・訳文・非表示にするかを決める */
+  function resolveChat(m) {
+    return translate(m.text).then(function (res) {
+      var src = res.src ? bl(res.src) : '', tl = bl(cfg.tl);
+      var same = !!src && src === tl;
+      var tr = (!same && !res.fail && res.t && res.t.trim() !== m.text.trim()) ? res.t : null;
+      var looksLocal = !src && /^(ja|zh)/.test(tl) && /[぀-ヿ一-鿿]/.test(m.text);
+      return { lang: langCode(src), tr: tr, drop: cfg.foreign && (same || looksLocal) };
+    }, function () { return { lang: '', tr: null, drop: false }; });
   }
-  function langCode(src) { return (src.split('-')[0] || '?').toUpperCase().slice(0, 3); }
 
   /* ---- 表示 ---- */
   var POOL = 'アカサタナハマヤラワ0123456789#%&$';
@@ -469,7 +584,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     li.innerHTML = '<div class="msg-in"><div class="card"><div class="meta"><span class="lang"></span><span class="user"></span>' +
       (m.hl ? '<span class="hl-tag">ハイライト</span>' : '') + '</div><p class="orig"></p>' +
       '<p class="tr"><span class="tr-wait">翻訳中…</span><span class="tr-text"></span></p></div></div>';
-    li.querySelector('.lang').textContent = lang || '…';
+    li.querySelector('.lang').textContent = lang == null ? '…' : lang;
     li.querySelector('.user').textContent = m.name;
     var orig = li.querySelector('.orig');
     if (m.text) orig.textContent = m.text; else orig.remove();
@@ -503,7 +618,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   function noTranslation(li, lang) {
     var tr = li.querySelector('.tr'); if (tr) tr.remove();
     var o = li.querySelector('.orig'); if (o) { o.style.opacity = 1; o.style.fontSize = '1em'; o.style.display = 'block'; }
-    if (lang) li.querySelector('.lang').textContent = lang;
+    li.querySelector('.lang').textContent = lang || '';
     trim();
   }
   function removeMsg(li) {
@@ -531,37 +646,41 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     el.addEventListener('animationend', function () { el.remove(); });
   }
 
-  /* 1件のコメントを受け取ってから表示するまで */
+  /* 1件のコメントを受け取ってから表示するまで（Chromeの画面側） */
   function handleChat(m) {
     if (m.text.charAt(0) === '!') return;
     if (!m.text) {
       if (cfg.foreign || !m.emotes.length) return;
-      if (cfg.mode === 'dm') addDm(m, '', '');
-      else noTranslation(addCard(m, ''), '');
+      relay.sendObj({ k: 'chat', m: m, lang: '', tr: null });
+      renderResolved(m, '', null);
       return;
     }
     var wait = cfg.foreign || cfg.mode === 'dm';
     var li = wait ? null : addCard(m);
-    translate(m.text).then(function (res) {
-      var same = sameLang(res, m.text), lang = langCode(res.src);
-      if (same && cfg.foreign) { if (li) removeMsg(li); return; }
-      if (cfg.mode === 'dm') { addDm(m, lang, same ? m.text : res.t); return; }
-      if (!li) li = addCard(m, lang);
-      li.querySelector('.lang').textContent = lang;
-      if (same) noTranslation(li, lang);
-      else setTimeout(function () { reveal(li, res.t); }, wait ? 500 : 150);
-    }, function () {
-      if (cfg.mode === 'dm') { addDm(m, '?', m.text); return; }
-      if (!li) li = addCard(m, '?');
-      noTranslation(li, '?');
+    resolveChat(m).then(function (r) {
+      if (r.drop) { if (li) removeMsg(li); return; }
+      relay.sendObj({ k: 'chat', m: m, lang: r.lang, tr: r.tr });
+      if (cfg.mode === 'dm') { addDm(m, r.lang, r.tr || m.text); return; }
+      if (!li) li = addCard(m, r.lang);
+      if (!r.tr) noTranslation(li, r.lang);
+      else { li.querySelector('.lang').textContent = r.lang; setTimeout(function () { reveal(li, r.tr); }, wait ? 500 : 150); }
     });
   }
-  function removeWhere(key, val) {
+  /* 翻訳済みのコメントを表示する（OBSの画面側でも使う） */
+  function renderResolved(m, lang, tr) {
+    if (cfg.mode === 'dm') { addDm(m, lang, tr || m.text); return; }
+    var li = addCard(m, lang);
+    if (!tr) noTranslation(li, lang);
+    else setTimeout(function () { reveal(li, tr); }, 500);
+  }
+  function removeWhere(key, val, fromRelay) {
     if (!val) return;
+    if (!fromRelay) relay.sendObj({ k: 'del', key: key, val: val });
     chat.querySelectorAll('.msg').forEach(function (li) { if (li.dataset[key] === val) removeMsg(li); });
     dmBox.querySelectorAll('.dm').forEach(function (el) { if (el.dataset[key] === val) el.remove(); });
   }
-  function clearAll() {
+  function clearAll(fromRelay) {
+    if (!fromRelay) relay.sendObj({ k: 'clear' });
     chat.querySelectorAll('.msg').forEach(removeMsg);
     dmBox.textContent = '';
   }
@@ -639,10 +758,18 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
   /* ---- 字幕の中継（ChromeからOBSの画面へ） ---- */
   var SB_URL = 'https://fpdyjvhmbjyzyxmiwlaa.supabase.co', SB_KEY = 'sb_publishable_i_ochJ2NZZ0QHLYmUAdClA_WItxfOZO';
-  var relay = { ready: false, state: '', send: function () {}, onstate: null };
+  var relay = { ready: false, state: '', send: function () {}, sendObj: function () {}, onstate: null };
+  function cleanMsg(m) {
+    if (!m || typeof m !== 'object') return null;
+    var str = function (v, n) { return String(v == null ? '' : v).slice(0, n); };
+    return {
+      id: str(m.id, 80), uid: str(m.uid, 40), name: str(m.name, 60), text: str(m.text, 600), hl: !!m.hl,
+      emotes: (Array.isArray(m.emotes) ? m.emotes : []).filter(function (e) { return /^[A-Za-z0-9_]{1,40}$/.test(String(e)); }).slice(0, 6)
+    };
+  }
   (function () {
     var room = (P.get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
-    if (!subCfg.on || room.length < 12) return;
+    if (room.length < 12) { if (isObs) status('URLが正しくありません。設定画面からコピーし直してください。'); return; }
     function setState(t) { relay.state = t; if (relay.onstate) relay.onstate(); }
     var sc = document.createElement('script');
     sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
@@ -650,28 +777,40 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       try {
         var client = window.supabase.createClient(SB_URL, SB_KEY);
         var ch = client.channel('subs-' + room, { config: { broadcast: { self: false } } });
-        ch.on('broadcast', { event: 'sub' }, function (m) {
-          var p = (m && m.payload) || {};
-          if (typeof p.text !== 'string') return;
-          var t = p.text.slice(0, 500);
-          if (p.k === 'src') { subSrc.textContent = t; subTouch(); }
-          else if (p.k === 'tr') setSubTr(t);
+        ch.on('broadcast', { event: 'sub' }, function (msg) {
+          var p = (msg && msg.payload) || {};
+          if (p.k === 'src' && typeof p.text === 'string') { subSrc.textContent = p.text.slice(0, 500); subTouch(); }
+          else if (p.k === 'tr' && typeof p.text === 'string') setSubTr(p.text.slice(0, 500));
+          else if (!isObs) return;
+          else if (p.k === 'chat') {
+            var c = cleanMsg(p.m);
+            if (c) renderResolved(c, String(p.lang || '').slice(0, 3), typeof p.tr === 'string' ? p.tr.slice(0, 600) : null);
+          }
+          else if (p.k === 'del' && (p.key === 'id' || p.key === 'uid')) removeWhere(p.key, String(p.val || ''), true);
+          else if (p.k === 'clear') clearAll(true);
         });
         ch.subscribe(function (st) {
           relay.ready = st === 'SUBSCRIBED';
           setState(relay.ready ? 'OBSへ送信できます' : 'OBSへの中継: ' + st);
+          if (isObs) {
+            if (relay.ready) status('Chromeの画面からの受信を待っています', true);
+            else if (st !== 'CLOSED') status('中継に接続できません（' + st + '）');
+          }
         });
         var last = 0;
+        relay.sendObj = function (payload) {
+          if (!relay.ready || isObs) return;
+          ch.send({ type: 'broadcast', event: 'sub', payload: payload });
+        };
         relay.send = function (k, text, force) {
-          if (!relay.ready) return;
           var now = Date.now();
           if (!force && now - last < 200) return;
           last = now;
-          ch.send({ type: 'broadcast', event: 'sub', payload: { k: k, text: text } });
+          relay.sendObj({ k: k, text: text });
         };
-      } catch (e) { setState('OBSへの中継を開始できません'); }
+      } catch (e) { setState('OBSへの中継を開始できません'); if (isObs) status('中継を開始できません'); }
     };
-    sc.onerror = function () { setState('OBSへの中継を読み込めません'); };
+    sc.onerror = function () { setState('OBSへの中継を読み込めません'); if (isObs) status('中継を読み込めません'); };
     document.head.appendChild(sc);
   })();
 
@@ -682,11 +821,14 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     relay.send('src', text, isFinal);
     if (!isFinal) return;
     if (subCfg.speak.split('-')[0] === subCfg.tl.split('-')[0]) return;
-    translate(text, subCfg.tl).then(function (res) { setSubTr(res.t); relay.send('tr', res.t, true); }, function () {});
+    translate(text, subCfg.tl, subCfg.speak).then(function (res) {
+      if (res.fail || !res.t) return;
+      setSubTr(res.t); relay.send('tr', res.t, true);
+    }, function () {});
   }
   (function () {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!subCfg.on || !SR) return;
+    if (!subCfg.on || !SR || isObs) return;
     var btn = document.getElementById('mic'), infoEl = document.getElementById('micInfo');
     var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null;
     btn.hidden = false;
@@ -781,6 +923,11 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     return;
   }
 
+  /* OBSの画面は表示だけを行う。チャットの取得と翻訳はChromeの画面が担当する */
+  if (isObs) return;
+  if (engineName === 'builtin') initBuiltin();
+  else if (engineName === 'fallback') status('このブラウザではChrome内蔵の翻訳が使えないため、従来の方式で翻訳します。', true);
+
   /* ---- Twitchチャット接続（読み取り専用・ログイン不要） ---- */
   function parseLine(line) {
     var tags = {}, prefix = '', trailing = null, sp;
@@ -825,10 +972,10 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 5）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 6）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
-        if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(); return; }
+        if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
         if (m.cmd !== 'PRIVMSG' || m.trailing == null) return;
         var text = m.trailing, act = /^\u0001ACTION (.*)\u0001$/.exec(text);
         if (act) text = act[1];
