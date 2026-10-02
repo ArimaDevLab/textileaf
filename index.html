@@ -291,8 +291,9 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       <textarea id="fUrl" readonly></textarea>
     </label>
     <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
-    <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、このURLを貼ります。幅1920、高さ1080がおすすめです。音声字幕はChromeで開いたときだけ動きます。OBSの中ではまだ動きません。</p>
-    <p class="hint" id="ver">バージョン 4</p>
+    <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、このURLを貼ります。幅1920、高さ1080がおすすめです。</p>
+    <p class="hint">音声字幕をOBSに出すには、Chromeで「プレビューを開く」を押して「字幕を開始」にしたまま配信します。Chromeで拾った字幕が、このURLを貼ったOBSの画面に送られます。URLは他の人に見せないでください。</p>
+    <p class="hint" id="ver">バージョン 5</p>
   </form>
 </div>
 
@@ -330,6 +331,13 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     var $ = function (id) { return document.getElementById(id); };
     $('setup').hidden = false;
     var base = location.href.split('?')[0].split('#')[0];
+    var room = '';
+    try { room = localStorage.getItem('kotonoha-room') || ''; } catch (e) {}
+    if (!/^[A-Za-z0-9]{12,40}$/.test(room)) {
+      var rnd = new Uint8Array(16); crypto.getRandomValues(rnd);
+      room = Array.prototype.map.call(rnd, function (b) { return 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]; }).join('');
+      try { localStorage.setItem('kotonoha-room', room); } catch (e) {}
+    }
     function build(extra) {
       var q = new URLSearchParams();
       var ch = $('fChannel').value.trim().toLowerCase().replace(/^.*twitch\.tv\//, '').replace(/[^a-z0-9_]/g, '');
@@ -340,9 +348,9 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       q.set('scale', $('fScale').value);
       if ($('fForeign').checked) q.set('foreign', '1');
       if (!$('fOrig').checked) q.set('orig', '0');
-      if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
+      if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); q.set('room', room); }
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '4');
+      q.set('v', '5');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -629,13 +637,52 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     });
     subTouch();
   }
+  /* ---- 字幕の中継（ChromeからOBSの画面へ） ---- */
+  var SB_URL = 'https://fpdyjvhmbjyzyxmiwlaa.supabase.co', SB_KEY = 'sb_publishable_i_ochJ2NZZ0QHLYmUAdClA_WItxfOZO';
+  var relay = { ready: false, state: '', send: function () {}, onstate: null };
+  (function () {
+    var room = (P.get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    if (!subCfg.on || room.length < 12) return;
+    function setState(t) { relay.state = t; if (relay.onstate) relay.onstate(); }
+    var sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    sc.onload = function () {
+      try {
+        var client = window.supabase.createClient(SB_URL, SB_KEY);
+        var ch = client.channel('subs-' + room, { config: { broadcast: { self: false } } });
+        ch.on('broadcast', { event: 'sub' }, function (m) {
+          var p = (m && m.payload) || {};
+          if (typeof p.text !== 'string') return;
+          var t = p.text.slice(0, 500);
+          if (p.k === 'src') { subSrc.textContent = t; subTouch(); }
+          else if (p.k === 'tr') setSubTr(t);
+        });
+        ch.subscribe(function (st) {
+          relay.ready = st === 'SUBSCRIBED';
+          setState(relay.ready ? 'OBSへ送信できます' : 'OBSへの中継: ' + st);
+        });
+        var last = 0;
+        relay.send = function (k, text, force) {
+          if (!relay.ready) return;
+          var now = Date.now();
+          if (!force && now - last < 200) return;
+          last = now;
+          ch.send({ type: 'broadcast', event: 'sub', payload: { k: k, text: text } });
+        };
+      } catch (e) { setState('OBSへの中継を開始できません'); }
+    };
+    sc.onerror = function () { setState('OBSへの中継を読み込めません'); };
+    document.head.appendChild(sc);
+  })();
+
   function onSpeech(text, isFinal) {
     if (!text) return;
     subSrc.textContent = text;
     subTouch();
+    relay.send('src', text, isFinal);
     if (!isFinal) return;
     if (subCfg.speak.split('-')[0] === subCfg.tl.split('-')[0]) return;
-    translate(text, subCfg.tl).then(function (res) { setSubTr(res.t); }, function () {});
+    translate(text, subCfg.tl).then(function (res) { setSubTr(res.t); relay.send('tr', res.t, true); }, function () {});
   }
   (function () {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -646,9 +693,10 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     function paint() { btn.textContent = on ? '字幕を停止' : '字幕を開始'; btn.setAttribute('aria-pressed', String(on)); }
     function render() {
       var n = Math.min(5, Math.round(level * 5));
-      infoEl.textContent = 'マイク入力 ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state;
+      infoEl.textContent = 'マイク入力 ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state + (relay.state ? '　' + relay.state : '');
     }
     function setState(t) { state = t; infoEl.hidden = false; render(); }
+    relay.onstate = function () { if (on) render(); };
     function meter(s) {
       try {
         ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -659,7 +707,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
           an.getByteTimeDomainData(buf);
           var m = 0;
           for (var i = 0; i < buf.length; i++) m = Math.max(m, Math.abs(buf[i] - 128));
-          level = Math.min(1, m / 40); render();
+          level = Math.min(1, m / 16); render();
         }, 120);
       } catch (e) {}
     }
@@ -777,7 +825,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 4）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 5）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(); return; }
