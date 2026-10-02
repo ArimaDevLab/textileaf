@@ -292,7 +292,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     </label>
     <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
     <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、このURLを貼ります。幅1920、高さ1080がおすすめです。音声字幕はChromeで開いたときだけ動きます。OBSの中ではまだ動きません。</p>
-    <p class="hint" id="ver">バージョン 3</p>
+    <p class="hint" id="ver">バージョン 4</p>
   </form>
 </div>
 
@@ -342,6 +342,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       if (!$('fOrig').checked) q.set('orig', '0');
       if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
       for (var k in extra) q.set(k, extra[k]);
+      q.set('v', '4');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -776,7 +777,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 3）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 4）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(); return; }
