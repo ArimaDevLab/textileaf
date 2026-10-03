@@ -298,7 +298,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
     <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
     <p class="hint"><a href="../" style="color:inherit">Textileafの紹介ページ</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">お問い合わせ</a>　<a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit">利用規約</a></p>
-    <p class="hint" id="ver">バージョン 9</p>
+    <p class="hint" id="ver">バージョン 10</p>
   </form>
 </div>
 
@@ -359,7 +359,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
       q.set('room', room);
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '9');
+      q.set('v', '10');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -491,7 +491,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     diagBtn.hidden = false;
     function diagText() {
       var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
-      var lines = ['バージョン 9', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
+      var lines = ['バージョン 10', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
         '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
       Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
       return lines.join('\n');
@@ -763,6 +763,24 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
   /* ---- 字幕の中継（ChromeからOBSの画面へ） ---- */
   var SB_URL = 'https://fpdyjvhmbjyzyxmiwlaa.supabase.co', SB_KEY = 'sb_publishable_i_ochJ2NZZ0QHLYmUAdClA_WItxfOZO';
+  /* 利用回数の記録: 何人に使われているかを知るため、プレビューがTwitchにつながったときに1回だけ記録する。
+     チャンネル名、コメント、音声は記録しない。visitor はブラウザごとのランダムな番号。 */
+  var useLogged = false, twitchUp = false;
+  function logUse() {
+    if (useLogged || isObs || demo || !twitchUp || !relay.client) return;
+    useLogged = true;
+    var visitor = '';
+    try { visitor = localStorage.getItem('textileaf-visitor') || ''; } catch (e) {}
+    if (!/^[a-z0-9]{16}$/.test(visitor)) {
+      var rnd = new Uint8Array(16); crypto.getRandomValues(rnd);
+      visitor = Array.prototype.map.call(rnd, function (b) { return 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]; }).join('');
+      try { localStorage.setItem('textileaf-visitor', visitor); } catch (e) {}
+    }
+    try {
+      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '10' })
+        .then(function () {}, function () {});
+    } catch (e) {}
+  }
   var relay = { ready: false, state: '', send: function () {}, sendObj: function () {}, onstate: null };
   function cleanMsg(m) {
     if (!m || typeof m !== 'object') return null;
@@ -781,6 +799,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     sc.onload = function () {
       try {
         var client = window.supabase.createClient(SB_URL, SB_KEY);
+        relay.client = client; logUse();
         var ch = client.channel('subs-' + room, { config: { broadcast: { self: false } } });
         ch.on('broadcast', { event: 'sub' }, function (msg) {
           var p = (msg && msg.payload) || {};
@@ -977,7 +996,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 9）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('#' + channel + ' に接続しました（バージョン 10）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
