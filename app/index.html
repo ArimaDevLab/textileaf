@@ -266,12 +266,6 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         </select>
       </label>
     </div>
-    <label>翻訳の方式
-      <select id="fEngine">
-        <option value="builtin">Chrome内蔵（おすすめ）</option>
-        <option value="legacy">従来の方式（比較用）</option>
-      </select>
-    </label>
     <label class="inline"><input type="checkbox" id="fForeign"> 翻訳先と同じ言語のコメントは表示しない</label>
     <label class="inline"><input type="checkbox" id="fOrig" checked> 原文も表示する</label>
     <label class="inline"><input type="checkbox" id="fSub" checked> 音声字幕を使う（このパソコンのマイクを使います）</label>
@@ -303,7 +297,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
     <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
     <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
-    <p class="hint" id="ver">バージョン 8</p>
+    <p class="hint"><a href="../" style="color:inherit">Textileafの紹介ページ</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">お問い合わせ</a></p>
+    <p class="hint" id="ver">バージョン 9</p>
   </form>
 </div>
 
@@ -363,9 +358,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       if (!$('fOrig').checked) q.set('orig', '0');
       if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
       q.set('room', room);
-      if ($('fEngine').value === 'legacy') q.set('engine', 'legacy');
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '8');
+      q.set('v', '9');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -411,26 +405,12 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   /* ---- 翻訳（キュー・キャッシュ付き） ---- */
   var isObs = P.get('role') === 'obs';
   var hasBuiltin = ('Translator' in self) && ('LanguageDetector' in self);
-  var engineName = P.get('engine') === 'legacy' ? 'legacy' : (hasBuiltin ? 'builtin' : 'fallback');
+  var engineName = hasBuiltin ? 'builtin' : 'none';
   var cache = new Map(), queue = [], active = 0;
   function bl(code) {
     code = String(code || '');
     if (/^zh-(TW|HK|Hant)/i.test(code)) return 'zh-Hant';
     return code.split('-')[0].toLowerCase();
-  }
-  /* 従来の方式（非公式の経路。比較用と、内蔵翻訳が使えないブラウザ用） */
-  function fetchTranslate(text, tl) {
-    var ctl = new AbortController();
-    var tm = setTimeout(function () { ctl.abort(); }, 6000);
-    var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=' +
-      encodeURIComponent(tl) + '&dt=t&q=' + encodeURIComponent(text);
-    return fetch(url, { signal: ctl.signal }).then(function (r) {
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.json();
-    }).then(function (d) {
-      if (!Array.isArray(d) || !Array.isArray(d[0])) throw new Error('shape');
-      return { t: d[0].map(function (s) { return (s && s[0]) || ''; }).join(''), src: String(d[2] || '') };
-    }).finally(function () { clearTimeout(tm); });
   }
   /* Chrome内蔵の翻訳（パソコン内で処理。費用がかからない） */
   var diag = { det: '未確認', pairs: {}, last: 'なし', ok: 0, ng: 0 };
@@ -511,7 +491,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     diagBtn.hidden = false;
     function diagText() {
       var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
-      var lines = ['バージョン 8', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
+      var lines = ['バージョン 9', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
         '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
       Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
       return lines.join('\n');
@@ -552,7 +532,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     while (active < 3 && queue.length) {
       (function (job) {
         active++;
-        (engineName === 'builtin' ? builtinTranslate(job.text, job.tl, job.src) : fetchTranslate(job.text, job.tl)).then(function (r) {
+        (engineName === 'builtin' ? builtinTranslate(job.text, job.tl, job.src) : Promise.resolve({ t: job.text, src: '', fail: true })).then(function (r) {
           if (!r.fail) {
             if (cache.size > 300) cache.delete(cache.keys().next().value);
             cache.set(job.key, r);
@@ -951,7 +931,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   /* OBSの画面は表示だけを行う。チャットの取得と翻訳はChromeの画面が担当する */
   if (isObs) return;
   if (engineName === 'builtin') initBuiltin();
-  else if (engineName === 'fallback') status('このブラウザではChrome内蔵の翻訳が使えないため、従来の方式で翻訳します。', true);
+  else status('このブラウザでは翻訳が使えません。パソコンのChrome（最新版）で開いてください。');
 
   /* ---- Twitchチャット接続（読み取り専用・ログイン不要） ---- */
   function parseLine(line) {
@@ -997,7 +977,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 8）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 9）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }

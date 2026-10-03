@@ -109,6 +109,12 @@ summary::after { content: "+"; font-size: 22px; line-height: 1.2; transition: tr
 details[open] summary::after { transform: rotate(45deg); }
 details p { padding-bottom: 16px; color: var(--ink-soft); }
 
+.data { list-style: none; margin: 28px 0 0; padding: 0; max-width: 760px; display: flex; flex-direction: column; gap: 0; background: var(--paper); border: 3px solid var(--ink); border-radius: 20px 20px 20px 4px; box-shadow: var(--shadow); }
+.data li { padding: 14px 22px; border-top: 2px dashed rgba(58, 35, 64, .25); color: var(--ink-soft); }
+.data li:first-child { border-top: 0; }
+.data b { display: block; color: var(--ink); font-weight: 900; }
+footer .links { display: flex; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 8px; font-weight: 700; color: var(--ink); }
+
 /* ---- 締め ---- */
 .last { text-align: left; }
 .last .box { background: var(--pink); color: #fff; border: 4px solid var(--ink); border-radius: 28px 28px 28px 6px; box-shadow: 10px 10px 0 var(--ink); padding: 40px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
@@ -356,6 +362,17 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
   </section>
 
   <section class="wrap">
+    <h2 class="reveal">データの扱い</h2>
+    <ul class="data reveal">
+      <li><b>コメントの翻訳</b>あなたのパソコンのChromeの中で行います。コメントを外部の翻訳サービスに送ることはありません。</li>
+      <li><b>音声字幕</b>Chromeの音声認識機能を使います。マイクの音声は、文字にするためにGoogleの音声認識に送られます。字幕を使わなければ、マイクは使いません。</li>
+      <li><b>OBSへの中継</b>翻訳したコメントと字幕は、OBSの画面に届けるために中継サービス（Supabase）を通ります。中継するだけで、保存はしません。</li>
+      <li><b>Twitch</b>チャットは読み取り専用で取得します。Twitchへのログインは不要で、Textileafがコメントを書き込むことはありません。</li>
+      <li><b>集めていないもの</b>会員登録はなく、名前やメールアドレスなどの個人情報は集めていません。アクセス解析も入れていません。</li>
+    </ul>
+  </section>
+
+  <section class="wrap">
     <h2 class="reveal">よくある質問</h2>
     <div class="faq">
       <details><summary>料金はかかりますか？</summary><p>いまは試作版で、すべて無料です。</p></details>
@@ -363,6 +380,7 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
       <details><summary>使うのに何が必要ですか？</summary><p>パソコンのChromeと、OBSのようにブラウザソースを使える配信ソフトです。スマートフォンだけでは使えません。</p></details>
       <details><summary>YouTubeの配信で使えますか？</summary><p>いまはTwitchだけです。YouTube Liveへの対応は検討中です。</p></details>
       <details><summary>削除したコメントはどうなりますか？</summary><p>Twitchで削除されたコメントは、オーバーレイからも消えます。</p></details>
+      <details><summary>不具合や要望はどこに送ればいいですか？</summary><p>運営のArimaDevLabまでお知らせください。<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">ポートフォリオサイトのお問い合わせ</a>、またはメール（<a href="mailto:arima.dev.lab@outlook.jp">arima.dev.lab@outlook.jp</a>）で受け付けています。</p></details>
       <details><summary>どの言語に翻訳できますか？</summary><p>コメントの翻訳先は、日本語、英語、韓国語、中国語、スペイン語から選べます。字幕も同じ言語から選べます。</p></details>
     </div>
   </section>
@@ -375,7 +393,7 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
   </section>
 </main>
 
-<footer class="wrap">Textileaf 試作版。運営: ArimaDevLab。TwitchはTwitch Interactive, Inc.の商標です。本サービスはTwitchの公式サービスではありません。</footer>
+<footer class="wrap"><p class="links"><a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">運営: ArimaDevLab</a><a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">お問い合わせ</a><a href="mailto:arima.dev.lab@outlook.jp">arima.dev.lab@outlook.jp</a></p>Textileaf 試作版。TwitchはTwitch Interactive, Inc.の商標です。本サービスはTwitchの公式サービスではありません。</footer>
 
 <script>
 document.documentElement.classList.add('js');
