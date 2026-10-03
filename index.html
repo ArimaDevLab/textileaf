@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kotonoha Live</title>
+<title>Textileaf｜配信の翻訳オーバーレイ</title>
 <meta name="description" content="Twitchのチャットを翻訳して配信画面に重ねるオーバーレイ。話した言葉も翻訳字幕になります。無料の試作版。">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;700&family=Shippori+Mincho:wght@500;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
 <style>
@@ -263,7 +263,7 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
 <body>
 
 <header class="wrap top">
-  <a class="logo" href="./"><i></i>Kotonoha Live</a>
+  <a class="logo" href="./"><i></i>Textileaf</a>
   <a class="go" href="app/">使ってみる</a>
 </header>
 
@@ -273,7 +273,7 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
     <span class="float m f4">FR</span><span class="float y f5">PT</span><span class="float f6">ZH</span>
     <span class="eyebrow">Twitch配信者のための翻訳オーバーレイ</span>
     <h1><span>海外リスナーのコメントが、</span><br><span><em>その場で読める。</em></span></h1>
-    <p class="lead">Kotonoha Liveは、Twitchのチャットを翻訳して配信画面に重ねて表示します。あなたが話した言葉も、翻訳字幕になって画面に出ます。</p>
+    <p class="lead">Textileaf（テキスリーフ）は、Twitchのチャットを翻訳して配信画面に重ねて表示します。あなたが話した言葉も、翻訳字幕になって画面に出ます。</p>
     <div class="cta">
       <a class="btn" href="app/">無料で使ってみる</a>
       <a class="btn ghost" href="#demo">動きを見る</a>
@@ -375,7 +375,7 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
   </section>
 </main>
 
-<footer class="wrap">Kotonoha Live 試作版。TwitchはTwitch Interactive, Inc.の商標です。本サービスはTwitchの公式サービスではありません。</footer>
+<footer class="wrap">Textileaf 試作版。運営: ArimaDevLab。TwitchはTwitch Interactive, Inc.の商標です。本サービスはTwitchの公式サービスではありません。</footer>
 
 <script>
 document.documentElement.classList.add('js');
@@ -631,7 +631,7 @@ document.documentElement.classList.add('js');
     inner.dataset.skin = s;
     skinDesc.textContent = DESC[s];
     document.querySelectorAll('#skins button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.skin === s)); });
-    try { localStorage.setItem('kotonoha-skin', s); } catch (e) {}
+    try { localStorage.setItem('textileaf-skin', s); } catch (e) {}
   }
   on('skins', 'click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
@@ -663,7 +663,7 @@ document.documentElement.classList.add('js');
   on('chkSub', 'change', function (e) { inner.classList.toggle('no-sub', !e.target.checked); });
 
   var saved = null;
-  try { saved = localStorage.getItem('kotonoha-skin'); } catch (e) {}
+  try { saved = localStorage.getItem('textileaf-skin'); } catch (e) {}
   setSkin(DESC[saved] ? saved : 'pop');
   for (var k = 0; k < 4; k++) addMsg(next(), false, true);
   showSub();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kotonoha Live オーバーレイ</title>
+<title>Textileaf 設定</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;700&family=Shippori+Mincho:wght@500;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@500;900&display=swap">
 <style>
 
@@ -226,7 +226,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 <body>
 
 <div id="setup" hidden>
-  <h1>Kotonoha Live オーバーレイ設定</h1>
+  <h1>Textileaf 設定</h1>
   <p>Twitchのチャンネル名を入れて「プレビューを開く」を押すと、実際のチャットが翻訳されて流れます。配信中のチャンネルで試してください。</p>
   <form id="form">
     <label>Twitchのチャンネル名（URLの twitch.tv/ の後ろの部分）
@@ -345,11 +345,11 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     $('setup').hidden = false;
     var base = location.href.split('?')[0].split('#')[0];
     var room = '';
-    try { room = localStorage.getItem('kotonoha-room') || ''; } catch (e) {}
+    try { room = localStorage.getItem('textileaf-room') || ''; } catch (e) {}
     if (!/^[A-Za-z0-9]{12,40}$/.test(room)) {
       var rnd = new Uint8Array(16); crypto.getRandomValues(rnd);
       room = Array.prototype.map.call(rnd, function (b) { return 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]; }).join('');
-      try { localStorage.setItem('kotonoha-room', room); } catch (e) {}
+      try { localStorage.setItem('textileaf-room', room); } catch (e) {}
     }
     function build(extra) {
       var q = new URLSearchParams();
