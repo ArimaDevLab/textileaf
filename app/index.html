@@ -295,10 +295,10 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       <textarea id="fUrl" readonly></textarea>
     </label>
     <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
-    <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
+    <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。音声字幕を使うときは、先にこの画面で「字幕を開始」を押してから、配信ソフトを起動してください。順番が逆だと、マイクの音が届かないことがあります。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
     <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
     <p class="hint"><a href="../" style="color:inherit">Textileafの紹介ページ</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">お問い合わせ</a>　<a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit">利用規約</a></p>
-    <p class="hint" id="ver">バージョン 11</p>
+    <p class="hint" id="ver">バージョン 12</p>
   </form>
 </div>
 
@@ -359,7 +359,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
       q.set('room', room);
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '11');
+      q.set('v', '12');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -491,7 +491,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     diagBtn.hidden = false;
     function diagText() {
       var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
-      var lines = ['バージョン 11', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
+      var lines = ['バージョン 12', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
         '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
       Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
       return lines.join('\n');
@@ -777,7 +777,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       try { localStorage.setItem('textileaf-visitor', visitor); } catch (e) {}
     }
     try {
-      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '11' })
+      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '12' })
         .then(function () {}, function () {});
     } catch (e) {}
   }
@@ -855,7 +855,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!subCfg.on || !SR || isObs) return;
     var btn = document.getElementById('mic'), infoEl = document.getElementById('micInfo');
-    var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null, micName = '';
+    var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null, micName = '', meterStart = 0, heard = false, warned = false;
     btn.hidden = false;
     function paint() { btn.textContent = on ? '字幕を停止' : '字幕を開始'; btn.setAttribute('aria-pressed', String(on)); }
     function render() {
@@ -873,11 +873,18 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         var an = ac.createAnalyser(); an.fftSize = 512;
         ac.createMediaStreamSource(s).connect(an);
         var buf = new Uint8Array(an.fftSize);
+        meterStart = Date.now(); heard = false; warned = false;
         meterT = setInterval(function () {
           an.getByteTimeDomainData(buf);
           var m = 0;
           for (var i = 0; i < buf.length; i++) m = Math.max(m, Math.abs(buf[i] - 128));
           level = Math.min(1, m / 16); render();
+          /* 音が届いていないまま8秒たったら、起動の順番を案内する */
+          if (level > 0.12) heard = true;
+          if (!heard && !warned && Date.now() - meterStart > 8000) {
+            warned = true;
+            status('マイクの音が届いていません。配信ソフト（OBSなど）をいったん終了し、この画面で「字幕を開始」を押してから、配信ソフトを起動し直してください。');
+          }
         }, 120);
       } catch (e) {}
     }
@@ -1000,7 +1007,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('#' + channel + ' に接続しました（バージョン 11）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('#' + channel + ' に接続しました（バージョン 12）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
