@@ -203,6 +203,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 #micInfo { position: fixed; top: 54px; right: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); padding: 5px 10px; border-radius: 6px; }
 .lang:empty { display: none; }
 #prep { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ffd23f; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+#diagBtn { position: fixed; top: 50px; left: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); border: 1px solid rgba(255,255,255,.4); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+#diagBox { position: fixed; top: 84px; left: 12px; max-width: min(520px, 90vw); max-height: 70vh; overflow: auto; margin: 0; font: 12px/1.6 ui-monospace, Consolas, monospace; color: #fff; background: rgba(10, 8, 30, .92); border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; word-break: break-all; }
 #mic:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 #setup { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; font: 15px/1.7 "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif; display: flex; flex-direction: column; gap: 16px; }
@@ -301,7 +303,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
     <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
     <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
-    <p class="hint" id="ver">バージョン 6</p>
+    <p class="hint" id="ver">バージョン 7</p>
   </form>
 </div>
 
@@ -317,6 +319,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 <button type="button" id="mic" aria-pressed="false" hidden>字幕を開始</button>
 <div id="micInfo" hidden></div>
 <button type="button" id="prep" hidden></button>
+<button type="button" id="diagBtn" hidden>診断</button>
+<pre id="diagBox" hidden></pre>
 
 <script>
 (function () {
@@ -361,7 +365,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       q.set('room', room);
       if ($('fEngine').value === 'legacy') q.set('engine', 'legacy');
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '6');
+      q.set('v', '7');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -429,6 +433,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     }).finally(function () { clearTimeout(tm); });
   }
   /* Chrome内蔵の翻訳（パソコン内で処理。費用がかからない） */
+  var diag = { det: '未確認', pairs: {}, last: 'なし', ok: 0, ng: 0 };
+  function errText(e) { return e ? (e.name || 'Error') + ': ' + (e.message || '') : '不明'; }
   var detector = null, translators = {}, pendingTr = {}, needClick = {}, needDet = false, prepBusy = false;
   var prepBtn = document.getElementById('prep');
   function prepUI() {
@@ -455,8 +461,9 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   function createTranslator(src, tl) {
     var key = src + '>' + tl;
     return Translator.create({ sourceLanguage: src, targetLanguage: tl }).then(function (t) {
-      translators[key] = t; delete needClick[key]; prepUI(); return t;
+      translators[key] = t; delete needClick[key]; diag.pairs[key] = '作成済み'; prepUI(); return t;
     }, function (e) {
+      diag.pairs[key] = '作成失敗 ' + errText(e);
       if (e && e.name === 'NotAllowedError') { needClick[key] = [src, tl]; prepUI(); }
       throw e;
     });
@@ -466,7 +473,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     if (key in translators) return translators[key] ? Promise.resolve(translators[key]) : Promise.reject(new Error('unavailable'));
     if (pendingTr[key]) return pendingTr[key];
     var pr = Translator.availability({ sourceLanguage: src, targetLanguage: tl }).then(function (a) {
-      if (a === 'unavailable') { translators[key] = null; throw new Error('unavailable'); }
+      diag.pairs[key] = a;
+      if (a === 'unavailable') { translators[key] = null; setTimeout(function () { delete translators[key]; }, 60000); throw new Error('unavailable'); }
       return createTranslator(src, tl);
     });
     pendingTr[key] = pr;
@@ -478,8 +486,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     return (srcHint ? Promise.resolve(bl(srcHint)) : detectLang(text)).then(function (src) {
       if (!src || src === tl) return { t: text, src: src };
       return getTranslator(src, tl).then(function (tr) { return tr.translate(text); }).then(
-        function (out) { return { t: String(out || ''), src: src }; },
-        function () { return { t: text, src: src, fail: true }; });
+        function (out) { diag.ok++; return { t: String(out || ''), src: src }; },
+        function (e) { diag.ng++; diag.last = src + '>' + tl + ' ' + errText(e); return { t: text, src: src, fail: true }; });
     });
   }
   function initBuiltin() {
@@ -488,19 +496,32 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     var sp = bl(P.get('speak') || 'ja-JP'), st = bl(P.get('sublang') || 'en');
     if (P.get('sub') === '1' && sp !== st) pairs.push([sp, st]);
     LanguageDetector.availability().then(function (a) {
-      if (a === 'available') return LanguageDetector.create().then(function (d) { detector = d; });
+      diag.det = a;
+      if (a === 'available') return LanguageDetector.create().then(function (d) { detector = d; diag.det = '作成済み'; });
       if (a !== 'unavailable') { needDet = true; prepUI(); }
-    }).catch(function () {});
+    }).catch(function (e) { diag.det = '失敗 ' + errText(e); });
     pairs.forEach(function (pr) {
       Translator.availability({ sourceLanguage: pr[0], targetLanguage: pr[1] }).then(function (a) {
+        diag.pairs[pr[0] + '>' + pr[1]] = a;
         if (a === 'available') getTranslator(pr[0], pr[1]).catch(function () {});
         else if (a !== 'unavailable') { needClick[pr[0] + '>' + pr[1]] = pr; prepUI(); }
-      }).catch(function () {});
+      }).catch(function (e) { diag.pairs[pr[0] + '>' + pr[1]] = '確認失敗 ' + errText(e); });
     });
+    var diagBtn = document.getElementById('diagBtn'), diagBox = document.getElementById('diagBox');
+    diagBtn.hidden = false;
+    function diagText() {
+      var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
+      var lines = ['バージョン 7', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
+        '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
+      Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
+      return lines.join('\n');
+    }
+    diagBtn.addEventListener('click', function () { diagBox.hidden = !diagBox.hidden; diagBox.textContent = diagText(); });
+    setInterval(function () { if (!diagBox.hidden) diagBox.textContent = diagText(); }, 1000);
     prepBtn.addEventListener('click', function () {
       /* クリックの直後にまとめて開始する（ダウンロードの開始には利用者の操作が必要なため） */
       var jobs = [];
-      if (needDet) jobs.push(LanguageDetector.create().then(function (d) { detector = d; needDet = false; }));
+      if (needDet) jobs.push(LanguageDetector.create().then(function (d) { detector = d; needDet = false; diag.det = '作成済み'; }, function (e) { diag.det = '作成失敗 ' + errText(e); throw e; }));
       Object.keys(needClick).forEach(function (k) { jobs.push(createTranslator(needClick[k][0], needClick[k][1])); });
       var total = jobs.length, done = 0;
       prepBusy = true; prepUI();
@@ -764,7 +785,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     var str = function (v, n) { return String(v == null ? '' : v).slice(0, n); };
     return {
       id: str(m.id, 80), uid: str(m.uid, 40), name: str(m.name, 60), text: str(m.text, 600), hl: !!m.hl,
-      emotes: (Array.isArray(m.emotes) ? m.emotes : []).filter(function (e) { return /^[A-Za-z0-9_]{1,40}$/.test(String(e)); }).slice(0, 6)
+      emotes: (Array.isArray(m.emotes) ? m.emotes : []).filter(function (e) { return /^[A-Za-z0-9_]{1,80}$/.test(String(e)); }).slice(0, 6)
     };
   }
   (function () {
@@ -972,7 +993,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 6）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 7）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
