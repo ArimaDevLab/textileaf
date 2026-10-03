@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kotonoha Live オーバーレイ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;700&family=Shippori+Mincho:wght@500;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@500;900&display=swap">
+<style>
+
+/* Layout: 配信画面(16:9)を主役に置き、下に操作パネルを1段だけ。画面内の寸法はすべて em で配信画面の幅に追従させる。 */
+:root {
+  --bg: #f2f1f6;
+  --surface: #ffffff;
+  --fg: #18161f;
+  --muted: #625e70;
+  --line: #d9d6e2;
+  --accent: #c2255c;
+  --accent-fg: #ffffff;
+  --font-display: "Dela Gothic One", "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121019; --surface: #1c1926; --fg: #efedf5; --muted: #a29db3;
+    --line: #322e40; --accent: #ff7aa8; --accent-fg: #1a0c13; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121019; --surface: #1c1926; --fg: #efedf5; --muted: #a29db3;
+  --line: #322e40; --accent: #ff7aa8; --accent-fg: #1a0c13; color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.7; padding-inline: 16px; padding-block: 28px 48px; }
+.wrap { max-width: 1080px; margin-inline: auto; display: flex; flex-direction: column; gap: 20px; }
+
+header { display: flex; flex-direction: column; gap: 4px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(26px, 5vw, 38px); line-height: 1.15; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.tag { font-family: var(--font-body); font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px; }
+.lead { margin: 0; color: var(--muted); max-width: 40em; }
+
+/* ---------- 配信画面 ---------- */
+.stage { container-type: inline-size; position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; background: #15123a; box-shadow: 0 0 0 1px var(--line); }
+.stage-inner { position: absolute; inset: 0; font-size: 1.5vw; color: #fff; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.live { position: absolute; top: 1.2em; left: 1.4em; display: flex; align-items: center; gap: .5em; font: 700 .8em/1 var(--font-body); letter-spacing: .12em; color: #fff; background: rgba(10, 8, 30, .55); padding: .45em .7em; border-radius: .3em; }
+.live i { width: .6em; height: .6em; border-radius: 50%; background: #ff4d5e; animation: blink 1.6s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .3; } }
+
+.chat { font-size: calc(1em * var(--scale, 1)); position: absolute; right: 1.6em; bottom: 2.4em; width: 23em; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; justify-content: flex-end; }
+.msg { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .38s cubic-bezier(.2, .8, .2, 1); }
+.msg.open { grid-template-rows: 1fr; }
+.msg-in { min-height: 0; }
+.card { position: relative; margin-top: .55em; padding: .6em .85em .7em; background: color-mix(in srgb, var(--card-bg, #111) var(--a, 92%), transparent); }
+.meta { display: flex; align-items: center; gap: .5em; font-size: .72em; line-height: 1.2; }
+.lang { font-weight: 700; letter-spacing: .06em; padding: .15em .4em; }
+.user { opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.hl-tag { margin-left: auto; font-weight: 700; letter-spacing: .08em; }
+.orig { margin: .35em 0 0; font-size: .78em; line-height: 1.35; opacity: .72; overflow-wrap: anywhere; }
+.tr { margin: .2em 0 0; font-size: 1.05em; line-height: 1.4; font-weight: 700; min-height: 1.4em; overflow-wrap: anywhere; }
+.tr-wait { font-size: .65em; font-weight: 400; opacity: .7; animation: blink 1s ease-in-out infinite; }
+.tr-on .tr-wait { display: none; }
+.no-orig .orig { display: none; }
+.msg.out .card { animation: out-base .3s ease-in forwards; }
+@keyframes out-base { to { opacity: 0; transform: translateX(2em); } }
+
+.sub { position: absolute; left: 2em; bottom: 2.4em; max-width: 36em; padding: .6em 1em .7em; opacity: 0; transform: translateY(.6em); transition: opacity .3s, transform .3s; }
+.sub.show { opacity: 1; transform: none; }
+.sub-ja { font-size: .8em; opacity: .8; margin: 0; line-height: 1.4; }
+.sub-en { font-size: 1.5em; font-weight: 700; margin: .1em 0 0; line-height: 1.3; }
+.sub-en span { display: inline-block; white-space: pre; animation: word-in .35s cubic-bezier(.2, .9, .3, 1.3) both; }
+@keyframes word-in { from { opacity: 0; transform: translateY(.5em); } }
+.no-sub .sub { display: none; }
+
+/* ---------- 弾幕モード ---------- */
+.danmaku { position: absolute; inset: 0; overflow: hidden; pointer-events: none; font-size: calc(1em * var(--scale, 1)); }
+.dm { position: absolute; left: 100%; display: flex; align-items: center; gap: .4em; white-space: nowrap; font-size: 1.45em; font-weight: 900; color: #fff; text-shadow: 0 0 .15em #000, 0 .08em .2em #000; animation: dm-fly 9s linear forwards; }
+.dm.hl { font-size: 1.95em; }
+.dm .lang { font-size: .5em; text-shadow: none; }
+@keyframes dm-fly { to { transform: translateX(calc(-100vw - 100%)); } }
+[data-mode="dm"] .chat, [data-mode="cards"] .danmaku { display: none; }
+[data-skin="neon"] .dm { color: #7ff3ff; text-shadow: 0 0 .4em #27f5ff, 0 0 .12em #000; }
+[data-skin="neon"] .dm.hl { color: #ffc4fb; text-shadow: 0 0 .4em #ff3df2, 0 0 .12em #000; }
+[data-skin="pop"] .dm { -webkit-text-stroke: .2em #3a2340; paint-order: stroke fill; text-shadow: .08em .1em 0 #3a2340; }
+[data-skin="pop"] .dm .lang { -webkit-text-stroke: 0; text-shadow: none; }
+[data-skin="pop"] .dm.hl { color: #ffd23f; }
+[data-skin="sumi"] .dm { color: #1c1a17; background: #f5efe0; padding: .05em .6em; text-shadow: none; font-weight: 800; }
+[data-skin="sumi"] .dm.hl { background: #b3261e; color: #fbf3e4; }
+[data-skin="pixel"] .dm { color: #fff; font-weight: 400; text-shadow: .1em .1em 0 #10122b; animation-timing-function: steps(110); }
+[data-skin="pixel"] .dm.hl { color: #ffe45e; }
+
+/* ---------- 透過プレビュー ---------- */
+.stage-inner.clear { background: repeating-conic-gradient(#c9c8d2 0 25%, #efeef4 0 50%) 0 0 / 2.4em 2.4em; }
+.stage-inner.clear .live { display: none; }
+
+/* ---------- テーマ: ネオン ---------- */
+[data-skin="neon"] { font-family: "M PLUS 1 Code", "Zen Kaku Gothic New", monospace; }
+[data-skin="neon"] .msg-in { filter: drop-shadow(0 0 .45em rgba(39, 245, 255, .5)); }
+[data-skin="neon"] .card { --card-bg: #080a1e; color: #eaf9ff; border: 1px solid #27f5ff; clip-path: polygon(0 0, calc(100% - .9em) 0, 100% .9em, 100% 100%, .9em 100%, 0 calc(100% - .9em)); animation: in-neon .5s cubic-bezier(.2, .8, .2, 1) both; overflow: hidden; }
+[data-skin="neon"] .card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(39, 245, 255, .45) 50%, transparent 65%); transform: translateX(-120%); animation: sweep .7s .25s ease-out both; pointer-events: none; }
+[data-skin="neon"] .lang { background: #27f5ff; color: #06121c; }
+[data-skin="neon"] .tr { color: #7ff3ff; text-shadow: 0 0 .5em rgba(39, 245, 255, .7); }
+[data-skin="neon"] .hl .card { border-color: #ff3df2; --card-bg: #28062e; }
+[data-skin="neon"] .hl .msg-in { filter: drop-shadow(0 0 .7em rgba(255, 61, 242, .75)); }
+[data-skin="neon"] .hl .lang { background: #ff3df2; color: #fff; }
+[data-skin="neon"] .hl .tr { color: #ffc4fb; text-shadow: 0 0 .5em rgba(255, 61, 242, .8); }
+[data-skin="neon"] .sub { background: rgba(8, 10, 30, .8); border-left: .25em solid #ff3df2; color: #eaf9ff; }
+[data-skin="neon"] .sub-en { color: #7ff3ff; text-shadow: 0 0 .5em rgba(39, 245, 255, .6); }
+@keyframes in-neon { 0% { opacity: 0; transform: translateX(10em) skewX(-14deg); } 60% { opacity: 1; transform: translateX(-.6em) skewX(3deg); } 100% { transform: none; } }
+@keyframes sweep { to { transform: translateX(120%); } }
+
+/* ---------- テーマ: ポップ ---------- */
+[data-skin="pop"] { font-family: "Zen Maru Gothic", "Zen Kaku Gothic New", sans-serif; }
+[data-skin="pop"] .card { --card-bg: #fff6fa; color: #3a2340; border: .18em solid #3a2340; border-radius: 1.1em 1.1em 1.1em .25em; box-shadow: .28em .28em 0 #3a2340; margin-right: .3em; transform-origin: 100% 100%; animation: in-pop .55s cubic-bezier(.3, 1.6, .5, 1) both; }
+[data-skin="pop"] .lang { background: #ff6fa8; color: #fff; border-radius: 1em; padding-inline: .6em; }
+[data-skin="pop"] .tr { font-weight: 900; }
+[data-skin="pop"] .tr-on .tr-text { display: inline-block; animation: tr-pop .4s cubic-bezier(.3, 1.8, .5, 1) both; transform-origin: 0 100%; }
+[data-skin="pop"] .hl .card { --card-bg: #ffd23f; animation: in-pop .55s cubic-bezier(.3, 1.6, .5, 1) both, wobble 1.2s .6s ease-in-out infinite; }
+[data-skin="pop"] .sub { background: #fff6fa; color: #3a2340; border: .18em solid #3a2340; border-radius: 1.2em; box-shadow: .28em .28em 0 #3a2340; }
+[data-skin="pop"] .sub-en { font-weight: 900; color: #e0387c; }
+@keyframes in-pop { 0% { opacity: 0; transform: scale(.2) rotate(-10deg); } 100% { opacity: 1; transform: none; } }
+@keyframes tr-pop { from { opacity: 0; transform: scale(.5); } }
+@keyframes wobble { 0%, 100% { rotate: -1.2deg; } 50% { rotate: 1.2deg; } }
+
+/* ---------- テーマ: 墨 ---------- */
+[data-skin="sumi"] { font-family: "Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif; }
+[data-skin="sumi"] .card { --card-bg: #f5efe0; color: #1c1a17; animation: in-sumi .6s cubic-bezier(.6, 0, .2, 1) both; box-shadow: 0 .2em .8em rgba(0, 0, 0, .35); }
+[data-skin="sumi"] .lang { background: #b3261e; color: #fbf3e4; }
+[data-skin="sumi"] .tr { font-weight: 800; position: relative; padding-bottom: .25em; }
+[data-skin="sumi"] .tr::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: .16em; background: #1c1a17; border-radius: 60% 40% 70% 30% / 100%; transform: scaleX(0); transform-origin: 0 50%; }
+[data-skin="sumi"] .tr-on .tr::after { animation: stroke .5s .15s cubic-bezier(.7, 0, .2, 1) forwards; }
+[data-skin="sumi"] .tr-on .tr-text { display: inline-block; animation: wipe .55s cubic-bezier(.6, 0, .2, 1) both; }
+[data-skin="sumi"] .hl .card { --card-bg: #b3261e; color: #fbf3e4; }
+[data-skin="sumi"] .hl .lang { background: #fbf3e4; color: #b3261e; }
+[data-skin="sumi"] .hl .tr::after { background: #fbf3e4; }
+[data-skin="sumi"] .sub { background: #f5efe0; color: #1c1a17; border-bottom: .22em solid #b3261e; }
+[data-skin="sumi"] .sub-en { font-weight: 800; }
+@keyframes in-sumi { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 -1em -1em -1em); } }
+@keyframes wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 -.2em); } }
+@keyframes stroke { to { transform: scaleX(1); } }
+
+/* ---------- テーマ: ドット ---------- */
+[data-skin="pixel"] { font-family: "DotGothic16", "Zen Kaku Gothic New", monospace; }
+[data-skin="pixel"] .card { --card-bg: #10122b; color: #fff; margin-right: .4em; margin-left: .4em; box-shadow: 0 0 0 .16em #fff, 0 0 0 .34em #10122b; animation: in-pixel .32s steps(4) both; }
+[data-skin="pixel"] .lang { background: #ffe45e; color: #10122b; }
+[data-skin="pixel"] .tr { font-weight: 400; color: #ffe45e; }
+[data-skin="pixel"] .tr-on .tr-text::after { content: "▼"; font-size: .6em; margin-left: .4em; animation: blink .8s steps(1) infinite; }
+[data-skin="pixel"] .hl .card { animation: in-pixel .32s steps(4) both, flash .5s steps(1) 4; box-shadow: 0 0 0 .16em #ffe45e, 0 0 0 .34em #10122b; }
+[data-skin="pixel"] .msg.out .card { animation: out-pixel .3s steps(3) forwards; }
+[data-skin="pixel"] .sub { background: #10122b; box-shadow: 0 0 0 .16em #fff, 0 0 0 .34em #10122b; }
+[data-skin="pixel"] .sub-en { font-weight: 400; color: #ffe45e; }
+[data-skin="pixel"] .sub-en span { animation: word-px .01s steps(1) both; }
+@keyframes in-pixel { from { opacity: 0; transform: translateY(2.4em); } }
+@keyframes out-pixel { to { opacity: 0; transform: translateY(-1.2em); } }
+@keyframes flash { 50% { background: #3b2f7a; } }
+@keyframes word-px { from { opacity: 0; } }
+
+/* ---------- 操作パネル ---------- */
+.caption { margin: -12px 0 0; font-size: 12px; color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted); min-width: 5em; }
+.skins { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: inherit; color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 6px 14px; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+button:hover { border-color: var(--fg); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.skins button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.skin-desc { margin: 0; color: var(--muted); flex: 1 1 16em; min-width: 0; }
+.check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.check input[type="range"] { width: 110px; height: auto; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+.note { margin: 0; font-size: 13px; color: var(--muted); max-width: 46em; }
+
+@media (max-width: 640px) {
+  .stage { aspect-ratio: 4 / 5; }
+  .stage-inner { font-size: 3.3vw; }
+  .chat { bottom: 8.6em; right: 1em; }
+  .sub { left: 1em; right: 1em; bottom: 1em; max-width: none; }
+  .sub-en { font-size: 1.25em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage *, .stage *::after { animation: none !important; transition: none !important; }
+  .danmaku { display: none; }
+  [data-skin="sumi"] .tr-on .tr::after { transform: scaleX(1); }
+}
+
+
+/* ---- 単体ファイル用の上書き ---- */
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: transparent; padding: 0; overflow: hidden; }
+body.preview { background: linear-gradient(#15123a, #4a2a7c 60%, #b8506d); }
+body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: dark; }
+#stage { position: fixed; inset: 0; aspect-ratio: auto; border-radius: 0; background: transparent; box-shadow: none; container-type: normal; }
+.emotes { display: flex; flex-wrap: wrap; gap: .2em; margin-top: .3em; }
+.emotes img { height: 1.7em; width: auto; }
+.dm img { height: 1.2em; width: auto; }
+#status { position: fixed; top: 12px; left: 12px; font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); padding: 6px 12px; border-radius: 6px; transition: opacity .6s; }
+#status.fade { opacity: 0; }
+.sub { font-size: calc(1em * var(--scale, 1)); }
+.sub-en:empty { display: none; }
+#mic { position: fixed; top: 12px; right: 12px; font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ff7aa8; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+#mic[aria-pressed="true"] { background: rgba(10, 8, 30, .75); color: #fff; }
+#micInfo { position: fixed; top: 54px; right: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); padding: 5px 10px; border-radius: 6px; }
+.lang:empty { display: none; }
+#prep { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ffd23f; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+#diagBtn { position: fixed; top: 50px; left: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); border: 1px solid rgba(255,255,255,.4); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+#diagBox { position: fixed; top: 84px; left: 12px; max-width: min(520px, 90vw); max-height: 70vh; overflow: auto; margin: 0; font: 12px/1.6 ui-monospace, Consolas, monospace; color: #fff; background: rgba(10, 8, 30, .92); border-radius: 6px; padding: 10px 12px; white-space: pre-wrap; word-break: break-all; }
+#mic:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+#setup { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; font: 15px/1.7 "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif; display: flex; flex-direction: column; gap: 16px; }
+#setup h1 { font-size: 24px; margin: 0; }
+#setup p { margin: 0; color: #a29db3; }
+#setup form { display: flex; flex-direction: column; gap: 14px; background: #1c1926; border: 1px solid #322e40; border-radius: 10px; padding: 18px; }
+#setup label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 700; color: #a29db3; }
+#setup label.inline { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; color: #efedf5; font-size: 15px; }
+#setup input[type="text"], #setup select, #setup textarea { font: inherit; color: #efedf5; background: #121019; border: 1px solid #322e40; border-radius: 6px; padding: 8px 10px; width: 100%; box-sizing: border-box; }
+#setup textarea { resize: none; height: 5.5em; font-size: 12px; word-break: break-all; }
+#setup .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#setup .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+#setup button { font: inherit; font-weight: 700; color: #1a0c13; background: #ff7aa8; border: 0; border-radius: 6px; padding: 9px 16px; cursor: pointer; }
+#setup button.sub2 { background: transparent; color: #efedf5; border: 1px solid #322e40; }
+#setup button:focus-visible, #setup input:focus-visible, #setup select:focus-visible { outline: 2px solid #ff7aa8; outline-offset: 2px; }
+#setup .hint { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div id="setup" hidden>
+  <h1>Kotonoha Live オーバーレイ設定</h1>
+  <p>Twitchのチャンネル名を入れて「プレビューを開く」を押すと、実際のチャットが翻訳されて流れます。配信中のチャンネルで試してください。</p>
+  <form id="form">
+    <label>Twitchのチャンネル名（URLの twitch.tv/ の後ろの部分）
+      <input type="text" id="fChannel" placeholder="例: channel_name" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="two">
+      <label>テーマ
+        <select id="fSkin">
+          <option value="pop">ポップ</option>
+          <option value="pixel">ドット</option>
+          <option value="neon">ネオン</option>
+          <option value="sumi">墨</option>
+        </select>
+      </label>
+      <label>表示モード
+        <select id="fMode">
+          <option value="cards">カード</option>
+          <option value="dm">弾幕（横に流す）</option>
+        </select>
+      </label>
+    </div>
+    <div class="two">
+      <label>翻訳先の言語
+        <select id="fLang">
+          <option value="ja">日本語</option>
+          <option value="en">英語</option>
+          <option value="ko">韓国語</option>
+          <option value="zh-CN">中国語（簡体字）</option>
+          <option value="es">スペイン語</option>
+        </select>
+      </label>
+      <label>文字サイズ
+        <select id="fScale">
+          <option value="0.85">小</option>
+          <option value="1" selected>標準</option>
+          <option value="1.2">大</option>
+        </select>
+      </label>
+    </div>
+    <label>翻訳の方式
+      <select id="fEngine">
+        <option value="builtin">Chrome内蔵（おすすめ）</option>
+        <option value="legacy">従来の方式（比較用）</option>
+      </select>
+    </label>
+    <label class="inline"><input type="checkbox" id="fForeign"> 翻訳先と同じ言語のコメントは表示しない</label>
+    <label class="inline"><input type="checkbox" id="fOrig" checked> 原文も表示する</label>
+    <label class="inline"><input type="checkbox" id="fSub" checked> 音声字幕を使う（このパソコンのマイクを使います）</label>
+    <div class="two">
+      <label>話す言語
+        <select id="fSpeak">
+          <option value="ja-JP">日本語</option>
+          <option value="en-US">英語</option>
+          <option value="ko-KR">韓国語</option>
+        </select>
+      </label>
+      <label>字幕の翻訳先
+        <select id="fSubLang">
+          <option value="en">英語</option>
+          <option value="ja">日本語</option>
+          <option value="ko">韓国語</option>
+          <option value="zh-CN">中国語（簡体字）</option>
+          <option value="es">スペイン語</option>
+        </select>
+      </label>
+    </div>
+    <div class="btns">
+      <button type="submit">プレビューを開く</button>
+      <button type="button" class="sub2" id="btnDemo">サンプルで動きを見る</button>
+    </div>
+    <label>OBSのブラウザソースに貼るURL
+      <textarea id="fUrl" readonly></textarea>
+    </label>
+    <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
+    <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
+    <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
+    <p class="hint" id="ver">バージョン 8</p>
+  </form>
+</div>
+
+<div class="stage" id="stage" hidden>
+  <div class="stage-inner" id="inner" data-skin="pop" data-mode="cards">
+    <canvas id="scene" aria-hidden="true"></canvas>
+    <div class="danmaku" id="danmaku"></div>
+    <div class="sub" id="sub"><p class="sub-ja" id="subSrc"></p><p class="sub-en" id="subTr"></p></div>
+    <ul class="chat" id="chat"></ul>
+  </div>
+</div>
+<div id="status" hidden></div>
+<button type="button" id="mic" aria-pressed="false" hidden>字幕を開始</button>
+<div id="micInfo" hidden></div>
+<button type="button" id="prep" hidden></button>
+<button type="button" id="diagBtn" hidden>診断</button>
+<pre id="diagBox" hidden></pre>
+
+<script>
+(function () {
+  var P = new URLSearchParams(location.search);
+  var channel = (P.get('channel') || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+  var demo = P.get('demo') === '1';
+  var SKINS = ['pop', 'pixel', 'neon', 'sumi'];
+  var cfg = {
+    skin: SKINS.indexOf(P.get('skin')) >= 0 ? P.get('skin') : 'pop',
+    mode: P.get('mode') === 'dm' ? 'dm' : 'cards',
+    tl: P.get('lang') || 'ja',
+    foreign: P.get('foreign') === '1',
+    orig: P.get('orig') !== '0',
+    scale: Math.min(1.6, Math.max(0.6, parseFloat(P.get('scale')) || 1)),
+    alpha: Math.min(100, Math.max(20, parseInt(P.get('alpha'), 10) || 92))
+  };
+
+  /* ================= 設定画面 ================= */
+  if (!channel && !demo) {
+    document.body.classList.add('setup');
+    var $ = function (id) { return document.getElementById(id); };
+    $('setup').hidden = false;
+    var base = location.href.split('?')[0].split('#')[0];
+    var room = '';
+    try { room = localStorage.getItem('kotonoha-room') || ''; } catch (e) {}
+    if (!/^[A-Za-z0-9]{12,40}$/.test(room)) {
+      var rnd = new Uint8Array(16); crypto.getRandomValues(rnd);
+      room = Array.prototype.map.call(rnd, function (b) { return 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]; }).join('');
+      try { localStorage.setItem('kotonoha-room', room); } catch (e) {}
+    }
+    function build(extra) {
+      var q = new URLSearchParams();
+      var ch = $('fChannel').value.trim().toLowerCase().replace(/^.*twitch\.tv\//, '').replace(/[^a-z0-9_]/g, '');
+      if (ch) q.set('channel', ch);
+      q.set('skin', $('fSkin').value);
+      q.set('mode', $('fMode').value);
+      q.set('lang', $('fLang').value);
+      q.set('scale', $('fScale').value);
+      if ($('fForeign').checked) q.set('foreign', '1');
+      if (!$('fOrig').checked) q.set('orig', '0');
+      if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
+      q.set('room', room);
+      if ($('fEngine').value === 'legacy') q.set('engine', 'legacy');
+      for (var k in extra) q.set(k, extra[k]);
+      q.set('v', '8');
+      return { ch: ch, url: base + '?' + q.toString() };
+    }
+    function refresh() {
+      var b = build({ role: 'obs' });
+      $('fUrl').value = b.ch ? b.url : 'チャンネル名を入れるとURLが出ます';
+    }
+    $('form').addEventListener('input', refresh);
+    $('form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var b = build({ preview: '1' });
+      if (!b.ch) { $('fChannel').focus(); return; }
+      location.href = b.url;
+    });
+    $('btnDemo').addEventListener('click', function () { location.href = build({ preview: '1', demo: '1' }).url; });
+    $('btnCopy').addEventListener('click', function () {
+      var t = $('fUrl');
+      navigator.clipboard.writeText(t.value).then(function () { $('btnCopy').textContent = 'コピーしました'; },
+        function () { t.focus(); t.select(); });
+    });
+    refresh();
+    return;
+  }
+
+  /* ================= オーバーレイ ================= */
+  if (P.get('preview') === '1') document.body.classList.add('preview');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var stage = document.getElementById('stage'), inner = document.getElementById('inner'), chat = document.getElementById('chat');
+  stage.hidden = false;
+  inner.dataset.skin = cfg.skin;
+  inner.dataset.mode = cfg.mode;
+  inner.style.setProperty('--scale', cfg.scale);
+  inner.style.setProperty('--a', cfg.alpha + '%');
+  if (!cfg.orig) inner.classList.add('no-orig');
+  var MAX = 5;
+
+  var statusEl = document.getElementById('status'), statusT;
+  function status(text, fade) {
+    statusEl.hidden = false; statusEl.textContent = text; statusEl.classList.remove('fade');
+    clearTimeout(statusT);
+    if (fade) statusT = setTimeout(function () { statusEl.classList.add('fade'); }, 4000);
+  }
+
+  /* ---- 翻訳（キュー・キャッシュ付き） ---- */
+  var isObs = P.get('role') === 'obs';
+  var hasBuiltin = ('Translator' in self) && ('LanguageDetector' in self);
+  var engineName = P.get('engine') === 'legacy' ? 'legacy' : (hasBuiltin ? 'builtin' : 'fallback');
+  var cache = new Map(), queue = [], active = 0;
+  function bl(code) {
+    code = String(code || '');
+    if (/^zh-(TW|HK|Hant)/i.test(code)) return 'zh-Hant';
+    return code.split('-')[0].toLowerCase();
+  }
+  /* 従来の方式（非公式の経路。比較用と、内蔵翻訳が使えないブラウザ用） */
+  function fetchTranslate(text, tl) {
+    var ctl = new AbortController();
+    var tm = setTimeout(function () { ctl.abort(); }, 6000);
+    var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=' +
+      encodeURIComponent(tl) + '&dt=t&q=' + encodeURIComponent(text);
+    return fetch(url, { signal: ctl.signal }).then(function (r) {
+      if (!r.ok) throw new Error('http ' + r.status);
+      return r.json();
+    }).then(function (d) {
+      if (!Array.isArray(d) || !Array.isArray(d[0])) throw new Error('shape');
+      return { t: d[0].map(function (s) { return (s && s[0]) || ''; }).join(''), src: String(d[2] || '') };
+    }).finally(function () { clearTimeout(tm); });
+  }
+  /* Chrome内蔵の翻訳（パソコン内で処理。費用がかからない） */
+  var diag = { det: '未確認', pairs: {}, last: 'なし', ok: 0, ng: 0 };
+  function errText(e) { return e ? (e.name || 'Error') + ': ' + (e.message || '') : '不明'; }
+  var detector = null, translators = {}, pendingTr = {}, needClick = {}, needDet = false, prepBusy = false;
+  var prepBtn = document.getElementById('prep');
+  function prepUI() {
+    var n = Object.keys(needClick).length + (needDet ? 1 : 0);
+    prepBtn.hidden = isObs || prepBusy || n === 0;
+    prepBtn.textContent = '翻訳データを入手する（' + n + '件・初回のみ）';
+  }
+  function quickLang(text) {
+    if (/[぀-ヿ]/.test(text)) return 'ja';
+    if (/[가-힯]/.test(text)) return 'ko';
+    if (/[฀-๿]/.test(text)) return 'th';
+    return '';
+  }
+  function detectLang(text) {
+    var q = quickLang(text);
+    if (q) return Promise.resolve(q);
+    if (!detector) return Promise.resolve('');
+    return detector.detect(text).then(function (r) {
+      var top = r && r[0];
+      if (!top || top.detectedLanguage === 'und' || top.confidence < 0.5) return '';
+      return bl(top.detectedLanguage);
+    }, function () { return ''; });
+  }
+  function createTranslator(src, tl) {
+    var key = src + '>' + tl;
+    return Translator.create({ sourceLanguage: src, targetLanguage: tl }).then(function (t) {
+      translators[key] = t; delete needClick[key]; diag.pairs[key] = '作成済み'; prepUI(); return t;
+    }, function (e) {
+      diag.pairs[key] = '作成失敗 ' + errText(e);
+      if (e && e.name === 'NotAllowedError') { needClick[key] = [src, tl]; prepUI(); }
+      throw e;
+    });
+  }
+  function getTranslator(src, tl) {
+    var key = src + '>' + tl;
+    if (key in translators) return translators[key] ? Promise.resolve(translators[key]) : Promise.reject(new Error('unavailable'));
+    if (pendingTr[key]) return pendingTr[key];
+    var pr = Translator.availability({ sourceLanguage: src, targetLanguage: tl }).then(function (a) {
+      diag.pairs[key] = a;
+      if (a === 'unavailable') { translators[key] = null; setTimeout(function () { delete translators[key]; }, 60000); throw new Error('unavailable'); }
+      return createTranslator(src, tl);
+    });
+    pendingTr[key] = pr;
+    pr.then(function () { delete pendingTr[key]; }, function () { delete pendingTr[key]; });
+    return pr;
+  }
+  function builtinTranslate(text, tl, srcHint) {
+    tl = bl(tl);
+    return (srcHint ? Promise.resolve(bl(srcHint)) : detectLang(text)).then(function (src) {
+      if (!src || src === tl) return { t: text, src: src };
+      return getTranslator(src, tl).then(function (tr) { return tr.translate(text); }).then(
+        function (out) { diag.ok++; return { t: String(out || ''), src: src }; },
+        function (e) { diag.ng++; diag.last = src + '>' + tl + ' ' + errText(e); return { t: text, src: src, fail: true }; });
+    });
+  }
+  function initBuiltin() {
+    var tl = bl(cfg.tl), pairs = [];
+    ['en', 'es', 'pt', 'ko', 'zh', 'fr', 'de', 'ru', 'id', 'th', 'ja'].forEach(function (src) { if (src !== tl) pairs.push([src, tl]); });
+    var sp = bl(P.get('speak') || 'ja-JP'), st = bl(P.get('sublang') || 'en');
+    if (P.get('sub') === '1' && sp !== st) pairs.push([sp, st]);
+    LanguageDetector.availability().then(function (a) {
+      diag.det = a;
+      if (a === 'available') return LanguageDetector.create().then(function (d) { detector = d; diag.det = '作成済み'; });
+      if (a !== 'unavailable') { needDet = true; prepUI(); }
+    }).catch(function (e) { diag.det = '失敗 ' + errText(e); });
+    pairs.forEach(function (pr) {
+      Translator.availability({ sourceLanguage: pr[0], targetLanguage: pr[1] }).then(function (a) {
+        diag.pairs[pr[0] + '>' + pr[1]] = a;
+        if (a === 'available') getTranslator(pr[0], pr[1]).catch(function () {});
+        else if (a !== 'unavailable') { needClick[pr[0] + '>' + pr[1]] = pr; prepUI(); }
+      }).catch(function (e) { diag.pairs[pr[0] + '>' + pr[1]] = '確認失敗 ' + errText(e); });
+    });
+    var diagBtn = document.getElementById('diagBtn'), diagBox = document.getElementById('diagBox');
+    diagBtn.hidden = false;
+    function diagText() {
+      var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
+      var lines = ['バージョン 8', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
+        '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
+      Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
+      return lines.join('\n');
+    }
+    diagBtn.addEventListener('click', function () { diagBox.hidden = !diagBox.hidden; diagBox.textContent = diagText(); });
+    setInterval(function () { if (!diagBox.hidden) diagBox.textContent = diagText(); }, 1000);
+    prepBtn.addEventListener('click', function () {
+      /* クリックの直後にまとめて開始する（ダウンロードの開始には利用者の操作が必要なため） */
+      var jobs = [];
+      if (needDet) jobs.push(LanguageDetector.create().then(function (d) { detector = d; needDet = false; diag.det = '作成済み'; }, function (e) { diag.det = '作成失敗 ' + errText(e); throw e; }));
+      Object.keys(needClick).forEach(function (k) { jobs.push(createTranslator(needClick[k][0], needClick[k][1])); });
+      var total = jobs.length, done = 0;
+      prepBusy = true; prepUI();
+      status('翻訳データを入手中 0/' + total + '（数分かかることがあります）');
+      Promise.all(jobs.map(function (j) {
+        return j.catch(function () {}).then(function () { done++; status('翻訳データを入手中 ' + done + '/' + total); });
+      })).then(function () {
+        prepBusy = false; cache.clear(); prepUI();
+        if (prepBtn.hidden) {
+          /* 入手直後の画面では翻訳が使えないことがあるため、読み込み直して確実に使える状態にする */
+          status('翻訳データを入手しました。画面を読み込み直します…');
+          setTimeout(function () { location.reload(); }, 1500);
+        } else status('一部の翻訳データを入手できませんでした。もう一度押してください。', true);
+      });
+    });
+  }
+  function translate(text, tl, srcHint) {
+    tl = tl || cfg.tl;
+    var key = tl + '|' + text;
+    if (cache.has(key)) return Promise.resolve(cache.get(key));
+    return new Promise(function (resolve, reject) {
+      if (queue.length >= 20) queue.shift().reject(new Error('dropped'));
+      queue.push({ text: text, tl: tl, src: srcHint, key: key, resolve: resolve, reject: reject });
+      pump();
+    });
+  }
+  function pump() {
+    while (active < 3 && queue.length) {
+      (function (job) {
+        active++;
+        (engineName === 'builtin' ? builtinTranslate(job.text, job.tl, job.src) : fetchTranslate(job.text, job.tl)).then(function (r) {
+          if (!r.fail) {
+            if (cache.size > 300) cache.delete(cache.keys().next().value);
+            cache.set(job.key, r);
+          }
+          job.resolve(r);
+        }, job.reject).finally(function () { active--; pump(); });
+      })(queue.shift());
+    }
+  }
+  function langCode(src) { return (src.split('-')[0] || '').toUpperCase().slice(0, 3); }
+  /* 翻訳結果から、表示する言語ラベル・訳文・非表示にするかを決める */
+  function resolveChat(m) {
+    return translate(m.text).then(function (res) {
+      var src = res.src ? bl(res.src) : '', tl = bl(cfg.tl);
+      var same = !!src && src === tl;
+      var tr = (!same && !res.fail && res.t && res.t.trim() !== m.text.trim()) ? res.t : null;
+      var looksLocal = !src && /^(ja|zh)/.test(tl) && /[぀-ヿ一-鿿]/.test(m.text);
+      return { lang: langCode(src), tr: tr, drop: cfg.foreign && (same || looksLocal) };
+    }, function () { return { lang: '', tr: null, drop: false }; });
+  }
+
+  /* ---- 表示 ---- */
+  var POOL = 'アカサタナハマヤラワ0123456789#%&$';
+  function reveal(li, text) {
+    var el = li.querySelector('.tr-text');
+    if (!el) return;
+    li.classList.add('tr-on');
+    var s = cfg.skin;
+    if (reduced || (s !== 'neon' && s !== 'pixel')) { el.textContent = text; trim(); return; }
+    var chars = Array.from(text), n = 0, step = s === 'neon' ? 28 : 55;
+    (function tick() {
+      n++;
+      var out = chars.slice(0, n).join('');
+      if (s === 'neon') for (var i = n; i < chars.length; i++) out += POOL[Math.floor(Math.random() * POOL.length)];
+      el.textContent = out;
+      if (n < chars.length && li.isConnected) setTimeout(tick, step);
+      else { el.textContent = text; trim(); }
+    })();
+  }
+  function emoteImgs(ids) {
+    var frag = document.createDocumentFragment();
+    ids.forEach(function (id) {
+      var img = new Image();
+      img.alt = '';
+      img.src = 'https://static-cdn.jtvnw.net/emoticons/v2/' + encodeURIComponent(id) + '/default/dark/2.0';
+      frag.appendChild(img);
+    });
+    return frag;
+  }
+  function addCard(m, lang) {
+    var li = document.createElement('li');
+    li.className = 'msg' + (m.hl ? ' hl' : '');
+    li.dataset.id = m.id || ''; li.dataset.uid = m.uid || '';
+    li.innerHTML = '<div class="msg-in"><div class="card"><div class="meta"><span class="lang"></span><span class="user"></span>' +
+      (m.hl ? '<span class="hl-tag">ハイライト</span>' : '') + '</div><p class="orig"></p>' +
+      '<p class="tr"><span class="tr-wait">翻訳中…</span><span class="tr-text"></span></p></div></div>';
+    li.querySelector('.lang').textContent = lang == null ? '…' : lang;
+    li.querySelector('.user').textContent = m.name;
+    var orig = li.querySelector('.orig');
+    if (m.text) orig.textContent = m.text; else orig.remove();
+    if (m.emotes.length) {
+      var box = document.createElement('div'); box.className = 'emotes';
+      box.appendChild(emoteImgs(m.emotes));
+      li.querySelector('.card').appendChild(box);
+    }
+    chat.appendChild(li);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { li.classList.add('open'); }); });
+    if (m.hl) setTimeout(function () { burstAt(li); }, 300);
+    trim();
+    return li;
+  }
+  /* 画面の高さに収まる分だけ残す */
+  function cardH(li) {
+    var c = li.querySelector('.card');
+    return c.offsetHeight + (parseFloat(getComputedStyle(c).marginTop) || 0);
+  }
+  function trim() {
+    var live = Array.prototype.slice.call(chat.querySelectorAll('.msg:not(.out)'));
+    var avail = window.innerHeight - (parseFloat(getComputedStyle(chat).bottom) || 0) - 12;
+    var total = 0;
+    live.forEach(function (li) { total += cardH(li); });
+    while (live.length > 1 && (total > avail || live.length > 8)) {
+      var old = live.shift();
+      total -= cardH(old);
+      removeMsg(old);
+    }
+  }
+  function noTranslation(li, lang) {
+    var tr = li.querySelector('.tr'); if (tr) tr.remove();
+    var o = li.querySelector('.orig'); if (o) { o.style.opacity = 1; o.style.fontSize = '1em'; o.style.display = 'block'; }
+    li.querySelector('.lang').textContent = lang || '';
+    trim();
+  }
+  function removeMsg(li) {
+    li.classList.add('out');
+    setTimeout(function () { li.classList.remove('open'); }, reduced ? 0 : 280);
+    setTimeout(function () { li.remove(); }, reduced ? 0 : 700);
+  }
+
+  var dmBox = document.getElementById('danmaku'), laneFree = [0, 0, 0, 0, 0, 0, 0, 0];
+  function addDm(m, lang, text, tries) {
+    var now = performance.now(), lane = -1;
+    for (var i = 0; i < laneFree.length; i++) if (laneFree[i] <= now) { lane = i; break; }
+    if (lane < 0) { if ((tries || 0) < 12) setTimeout(function () { addDm(m, lang, text, (tries || 0) + 1); }, 250); return; }
+    var el = document.createElement('div');
+    el.className = 'dm' + (m.hl ? ' hl' : '');
+    el.dataset.id = m.id || ''; el.dataset.uid = m.uid || '';
+    var l = document.createElement('span'); l.className = 'lang'; l.textContent = lang;
+    var t = document.createElement('span'); t.textContent = text;
+    el.appendChild(l); el.appendChild(t); el.appendChild(emoteImgs(m.emotes.slice(0, 3)));
+    el.style.top = (m.hl ? 1.2 + lane * 1.72 : 1.6 + lane * 2.3) + 'em';
+    dmBox.appendChild(el);
+    var sw = dmBox.clientWidth, w = el.offsetWidth, speed = sw / 8;
+    el.style.animationDuration = ((sw + w) / speed) + 's';
+    laneFree[lane] = now + (w / speed) * 1000 + 500;
+    el.addEventListener('animationend', function () { el.remove(); });
+  }
+
+  /* 1件のコメントを受け取ってから表示するまで（Chromeの画面側） */
+  function handleChat(m) {
+    if (m.text.charAt(0) === '!') return;
+    if (!m.text) {
+      if (cfg.foreign || !m.emotes.length) return;
+      relay.sendObj({ k: 'chat', m: m, lang: '', tr: null });
+      renderResolved(m, '', null);
+      return;
+    }
+    var wait = cfg.foreign || cfg.mode === 'dm';
+    var li = wait ? null : addCard(m);
+    resolveChat(m).then(function (r) {
+      if (r.drop) { if (li) removeMsg(li); return; }
+      relay.sendObj({ k: 'chat', m: m, lang: r.lang, tr: r.tr });
+      if (cfg.mode === 'dm') { addDm(m, r.lang, r.tr || m.text); return; }
+      if (!li) li = addCard(m, r.lang);
+      if (!r.tr) noTranslation(li, r.lang);
+      else { li.querySelector('.lang').textContent = r.lang; setTimeout(function () { reveal(li, r.tr); }, wait ? 500 : 150); }
+    });
+  }
+  /* 翻訳済みのコメントを表示する（OBSの画面側でも使う） */
+  function renderResolved(m, lang, tr) {
+    if (cfg.mode === 'dm') { addDm(m, lang, tr || m.text); return; }
+    var li = addCard(m, lang);
+    if (!tr) noTranslation(li, lang);
+    else setTimeout(function () { reveal(li, tr); }, 500);
+  }
+  function removeWhere(key, val, fromRelay) {
+    if (!val) return;
+    if (!fromRelay) relay.sendObj({ k: 'del', key: key, val: val });
+    chat.querySelectorAll('.msg').forEach(function (li) { if (li.dataset[key] === val) removeMsg(li); });
+    dmBox.querySelectorAll('.dm').forEach(function (el) { if (el.dataset[key] === val) el.remove(); });
+  }
+  function clearAll(fromRelay) {
+    if (!fromRelay) relay.sendObj({ k: 'clear' });
+    chat.querySelectorAll('.msg').forEach(removeMsg);
+    dmBox.textContent = '';
+  }
+
+  /* ---- ハイライト用パーティクル ---- */
+  var cv = document.getElementById('scene'), ctx = cv.getContext('2d'), W = 0, H = 0, parts = [], running = false;
+  function resize() {
+    var d = Math.min(window.devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  window.addEventListener('resize', resize); resize();
+  var FX = {
+    neon: { c: ['#27f5ff', '#ff3df2', '#ffffff'], shape: 'spark', g: 0, sp: 7 },
+    pop: { c: ['#ff6fa8', '#ffd23f', '#7be0d6', '#ffffff'], shape: 'star', g: .18, sp: 6 },
+    sumi: { c: ['#1c1a17', '#b3261e', '#1c1a17'], shape: 'dot', g: .1, sp: 5 },
+    pixel: { c: ['#ffe45e', '#ffffff', '#7ad7ff'], shape: 'sq', g: .15, sp: 5 }
+  };
+  function burstAt(li) {
+    if (reduced || !li.isConnected) return;
+    var card = li.querySelector('.card').getBoundingClientRect(), fx = FX[cfg.skin];
+    var cx = card.left, cy = card.top + card.height / 2;
+    for (var i = 0; i < 46; i++) {
+      var ang = Math.PI * (.55 + Math.random() * .9), v = fx.sp * (.4 + Math.random()) * W / 1100;
+      parts.push({ x: cx + Math.random() * card.width * .3, y: cy + (Math.random() - .5) * card.height,
+        vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 1.5, g: fx.g, s: W / 1000 * (4 + Math.random() * 7),
+        rot: fx.shape === 'spark' ? ang : Math.random() * 6, vr: fx.shape === 'spark' ? 0 : (Math.random() - .5) * .3,
+        c: fx.c[i % fx.c.length], shape: fx.shape, life: .7 + Math.random() * .7, max: 1.4 });
+    }
+    if (!running) { running = true; requestAnimationFrame(frame); }
+  }
+  function frame() {
+    ctx.clearRect(0, 0, W, H);
+    for (var j = parts.length - 1; j >= 0; j--) {
+      var q = parts[j];
+      q.life -= 1 / 60;
+      if (q.life <= 0) { parts.splice(j, 1); continue; }
+      q.vy += q.g; q.x += q.vx; q.y += q.vy; q.rot += q.vr;
+      ctx.globalAlpha = Math.min(1, q.life / q.max * 1.6);
+      ctx.fillStyle = q.c; ctx.strokeStyle = q.c;
+      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot);
+      if (q.shape === 'spark') { ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-q.s, 0); ctx.lineTo(q.s, 0); ctx.stroke(); }
+      else if (q.shape === 'sq') ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s);
+      else if (q.shape === 'star') {
+        ctx.beginPath();
+        for (var a = 0; a < 10; a++) { var rr = a % 2 ? q.s * .45 : q.s; ctx.lineTo(Math.cos(a * Math.PI / 5) * rr, Math.sin(a * Math.PI / 5) * rr); }
+        ctx.closePath(); ctx.fill();
+      } else { ctx.beginPath(); ctx.arc(0, 0, q.s, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    if (parts.length) requestAnimationFrame(frame); else { running = false; ctx.clearRect(0, 0, W, H); }
+  }
+
+  /* ---- 音声字幕（Chromeの音声認識） ---- */
+  var subCfg = { on: P.get('sub') === '1', speak: P.get('speak') || 'ja-JP', tl: P.get('sublang') || 'en' };
+  var subEl = document.getElementById('sub'), subSrc = document.getElementById('subSrc'), subTr = document.getElementById('subTr'), subHideT;
+  function subTouch() {
+    subEl.classList.add('show');
+    clearTimeout(subHideT);
+    subHideT = setTimeout(function () { subEl.classList.remove('show'); subTr.textContent = ''; }, 7000);
+  }
+  function setSubTr(text) {
+    var cjk = /^(ja|zh|ko)/.test(subCfg.tl);
+    var units = cjk ? Array.from(text) : text.split(' ');
+    subTr.textContent = '';
+    units.forEach(function (w, i) {
+      var sp = document.createElement('span');
+      sp.textContent = w + (cjk || i === units.length - 1 ? '' : ' ');
+      sp.style.animationDelay = (i * (cjk ? 35 : 90)) + 'ms';
+      subTr.appendChild(sp);
+    });
+    subTouch();
+  }
+  /* ---- 字幕の中継（ChromeからOBSの画面へ） ---- */
+  var SB_URL = 'https://fpdyjvhmbjyzyxmiwlaa.supabase.co', SB_KEY = 'sb_publishable_i_ochJ2NZZ0QHLYmUAdClA_WItxfOZO';
+  var relay = { ready: false, state: '', send: function () {}, sendObj: function () {}, onstate: null };
+  function cleanMsg(m) {
+    if (!m || typeof m !== 'object') return null;
+    var str = function (v, n) { return String(v == null ? '' : v).slice(0, n); };
+    return {
+      id: str(m.id, 80), uid: str(m.uid, 40), name: str(m.name, 60), text: str(m.text, 600), hl: !!m.hl,
+      emotes: (Array.isArray(m.emotes) ? m.emotes : []).filter(function (e) { return /^[A-Za-z0-9_]{1,80}$/.test(String(e)); }).slice(0, 6)
+    };
+  }
+  (function () {
+    var room = (P.get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    if (room.length < 12) { if (isObs) status('URLが正しくありません。設定画面からコピーし直してください。'); return; }
+    function setState(t) { relay.state = t; if (relay.onstate) relay.onstate(); }
+    var sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    sc.onload = function () {
+      try {
+        var client = window.supabase.createClient(SB_URL, SB_KEY);
+        var ch = client.channel('subs-' + room, { config: { broadcast: { self: false } } });
+        ch.on('broadcast', { event: 'sub' }, function (msg) {
+          var p = (msg && msg.payload) || {};
+          if (p.k === 'src' && typeof p.text === 'string') { subSrc.textContent = p.text.slice(0, 500); subTouch(); }
+          else if (p.k === 'tr' && typeof p.text === 'string') setSubTr(p.text.slice(0, 500));
+          else if (!isObs) return;
+          else if (p.k === 'chat') {
+            var c = cleanMsg(p.m);
+            if (c) renderResolved(c, String(p.lang || '').slice(0, 3), typeof p.tr === 'string' ? p.tr.slice(0, 600) : null);
+          }
+          else if (p.k === 'del' && (p.key === 'id' || p.key === 'uid')) removeWhere(p.key, String(p.val || ''), true);
+          else if (p.k === 'clear') clearAll(true);
+        });
+        ch.subscribe(function (st) {
+          relay.ready = st === 'SUBSCRIBED';
+          setState(relay.ready ? 'OBSへ送信できます' : 'OBSへの中継: ' + st);
+          if (isObs) {
+            if (relay.ready) status('Chromeの画面からの受信を待っています', true);
+            else if (st !== 'CLOSED') status('中継に接続できません（' + st + '）');
+          }
+        });
+        var last = 0;
+        relay.sendObj = function (payload) {
+          if (!relay.ready || isObs) return;
+          ch.send({ type: 'broadcast', event: 'sub', payload: payload });
+        };
+        relay.send = function (k, text, force) {
+          var now = Date.now();
+          if (!force && now - last < 200) return;
+          last = now;
+          relay.sendObj({ k: k, text: text });
+        };
+      } catch (e) { setState('OBSへの中継を開始できません'); if (isObs) status('中継を開始できません'); }
+    };
+    sc.onerror = function () { setState('OBSへの中継を読み込めません'); if (isObs) status('中継を読み込めません'); };
+    document.head.appendChild(sc);
+  })();
+
+  function onSpeech(text, isFinal) {
+    if (!text) return;
+    subSrc.textContent = text;
+    subTouch();
+    relay.send('src', text, isFinal);
+    if (!isFinal) return;
+    if (subCfg.speak.split('-')[0] === subCfg.tl.split('-')[0]) return;
+    translate(text, subCfg.tl, subCfg.speak).then(function (res) {
+      if (res.fail || !res.t) return;
+      setSubTr(res.t); relay.send('tr', res.t, true);
+    }, function () {});
+  }
+  (function () {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!subCfg.on || !SR || isObs) return;
+    var btn = document.getElementById('mic'), infoEl = document.getElementById('micInfo');
+    var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null;
+    btn.hidden = false;
+    function paint() { btn.textContent = on ? '字幕を停止' : '字幕を開始'; btn.setAttribute('aria-pressed', String(on)); }
+    function render() {
+      var n = Math.min(5, Math.round(level * 5));
+      infoEl.textContent = 'マイク入力 ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state + (relay.state ? '　' + relay.state : '');
+    }
+    function setState(t) { state = t; infoEl.hidden = false; render(); }
+    relay.onstate = function () { if (on) render(); };
+    function meter(s) {
+      try {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        var an = ac.createAnalyser(); an.fftSize = 512;
+        ac.createMediaStreamSource(s).connect(an);
+        var buf = new Uint8Array(an.fftSize);
+        meterT = setInterval(function () {
+          an.getByteTimeDomainData(buf);
+          var m = 0;
+          for (var i = 0; i < buf.length; i++) m = Math.max(m, Math.abs(buf[i] - 128));
+          level = Math.min(1, m / 16); render();
+        }, 120);
+      } catch (e) {}
+    }
+    var ERR = { 'no-speech': '声が聞こえません', 'audio-capture': 'マイクが見つかりません', 'language-not-supported': 'この言語は使えません', 'network': '音声認識に接続できません', 'aborted': '中断しました' };
+    function begin() {
+      if (!on) return;
+      rec = new SR();
+      rec.lang = subCfg.speak; rec.continuous = true; rec.interimResults = true;
+      rec.onstart = function () { setState('聞き取り中（' + subCfg.speak + '）'); };
+      rec.onspeechstart = function () { setState('声を検出'); };
+      rec.onresult = function (ev) {
+        wait = 300;
+        var fin = '', interim = '';
+        for (var i = ev.resultIndex; i < ev.results.length; i++) {
+          if (ev.results[i].isFinal) fin += ev.results[i][0].transcript; else interim += ev.results[i][0].transcript;
+        }
+        setState('認識中');
+        if (fin) onSpeech(fin.trim(), true); else onSpeech(interim.trim(), false);
+      };
+      rec.onerror = function (e) {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          stop(); status('マイクが許可されていません。アドレスバーのマイクのアイコンから許可してください。');
+          return;
+        }
+        if (e.error === 'network') wait = 4000;
+        setState(ERR[e.error] || ('エラー: ' + e.error));
+      };
+      rec.onend = function () { if (on) setTimeout(begin, wait); };
+      try { rec.start(); } catch (e) { setState('開始できません: ' + e.message); }
+    }
+    function stop() {
+      on = false; paint(); infoEl.hidden = true;
+      if (rec) { try { rec.stop(); } catch (e) {} }
+      clearInterval(meterT);
+      if (ac) { try { ac.close(); } catch (e) {} ac = null; }
+      if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+    }
+    btn.addEventListener('click', function () {
+      if (on) { stop(); return; }
+      on = true; paint(); setState('準備中');
+      status('字幕オン。話すと左下に出ます。', true);
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { stream = s; meter(s); begin(); }, function () {
+          stop(); status('マイクを使えませんでした。アドレスバーのマイクのアイコンから許可してください。');
+        });
+      } else begin();
+    });
+    paint();
+  })();
+
+  /* ---- サンプル再生 ---- */
+  if (demo) {
+    var S = [
+      ['ben_k', 'en', 'That clutch was insane!', '今の逆転すごすぎ！'],
+      ['luna_mx', 'es', '¡Saludos desde México!', 'メキシコからこんにちは！'],
+      ['taeyang92', 'ko', '오늘 방송 너무 재밌어요', '今日の配信すごく面白いです'],
+      ['sora_tabi', 'ja', 'ないすー', 'ないすー'],
+      ['camille_b', 'fr', 'Tu joues depuis combien de temps ?', 'どれくらいプレイしてるの？'],
+      ['pixelbruno', 'pt', 'Primeira vez aqui, adorei!', '初めて来たけど最高！'],
+      ['nordlicht', 'de', 'Grüße aus Berlin!', 'ベルリンからこんにちは！']
+    ];
+    cfg.tl = 'ja';
+    S.forEach(function (s) { cache.set('ja|' + s[2], { t: s[3], src: s[1] }); });
+    var n = 0;
+    status('サンプルを再生中（Twitchには接続していません）', true);
+    (function loop() {
+      var s = S[n % S.length]; n++;
+      handleChat({ id: 'd' + n, uid: s[0], name: s[0], text: s[2], emotes: [], hl: n % 5 === 0 });
+      setTimeout(loop, 1800 + Math.random() * 1200);
+    })();
+    return;
+  }
+
+  /* OBSの画面は表示だけを行う。チャットの取得と翻訳はChromeの画面が担当する */
+  if (isObs) return;
+  if (engineName === 'builtin') initBuiltin();
+  else if (engineName === 'fallback') status('このブラウザではChrome内蔵の翻訳が使えないため、従来の方式で翻訳します。', true);
+
+  /* ---- Twitchチャット接続（読み取り専用・ログイン不要） ---- */
+  function parseLine(line) {
+    var tags = {}, prefix = '', trailing = null, sp;
+    if (line.charAt(0) === '@') {
+      sp = line.indexOf(' ');
+      line.slice(1, sp).split(';').forEach(function (kv) { var e = kv.indexOf('='); tags[kv.slice(0, e)] = kv.slice(e + 1); });
+      line = line.slice(sp + 1);
+    }
+    if (line.charAt(0) === ':') { sp = line.indexOf(' '); prefix = line.slice(1, sp); line = line.slice(sp + 1); }
+    var ti = line.indexOf(' :');
+    if (ti >= 0) { trailing = line.slice(ti + 2); line = line.slice(0, ti); }
+    var parts = line.split(' ');
+    return { tags: tags, prefix: prefix, cmd: parts[0], params: parts.slice(1), trailing: trailing };
+  }
+  function stripEmotes(text, tag) {
+    var ids = [];
+    if (!tag) return { text: text.trim(), ids: ids };
+    var chars = Array.from(text);
+    tag.split('/').forEach(function (part) {
+      var c = part.indexOf(':'); if (c < 0) return;
+      var id = part.slice(0, c);
+      if (ids.indexOf(id) < 0 && ids.length < 6) ids.push(id);
+      part.slice(c + 1).split(',').forEach(function (r) {
+        var ab = r.split('-'), a = parseInt(ab[0], 10), b = parseInt(ab[1], 10);
+        for (var i = a; i <= b && i < chars.length; i++) chars[i] = '';
+      });
+    });
+    return { text: chars.join('').replace(/\s+/g, ' ').trim(), ids: ids };
+  }
+  var retry = 0;
+  function connect() {
+    status('#' + channel + ' に接続中…');
+    var ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+    ws.onopen = function () {
+      ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
+      ws.send('PASS SCHMOOPIIE');
+      ws.send('NICK justinfan' + Math.floor(10000 + Math.random() * 80000));
+      ws.send('JOIN #' + channel);
+    };
+    ws.onmessage = function (ev) {
+      String(ev.data).split('\r\n').forEach(function (raw) {
+        if (!raw) return;
+        var m = parseLine(raw);
+        if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; status('#' + channel + ' に接続しました（バージョン 8）', true); return; }
+        if (m.cmd === 'RECONNECT') { ws.close(); return; }
+        if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
+        if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
+        if (m.cmd !== 'PRIVMSG' || m.trailing == null) return;
+        var text = m.trailing, act = /^\u0001ACTION (.*)\u0001$/.exec(text);
+        if (act) text = act[1];
+        var e = stripEmotes(text, m.tags.emotes);
+        handleChat({
+          id: m.tags.id, uid: m.tags['user-id'],
+          name: m.tags['display-name'] || m.prefix.split('!')[0],
+          text: e.text, emotes: e.ids,
+          hl: m.tags['msg-id'] === 'highlighted-message' || !!m.tags.bits || m.tags['first-msg'] === '1'
+        });
+      });
+    };
+    ws.onclose = function () {
+      retry++;
+      var wait = Math.min(30, 2 * retry);
+      status('接続が切れました。' + wait + '秒後に再接続します…');
+      setTimeout(connect, wait * 1000);
+    };
+    ws.onerror = function () { try { ws.close(); } catch (e) {} };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>
