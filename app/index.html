@@ -200,7 +200,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 .sub-en:empty { display: none; }
 #mic { position: fixed; top: 12px; right: 12px; font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ff7aa8; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 #mic[aria-pressed="true"] { background: rgba(10, 8, 30, .75); color: #fff; }
-#micInfo { position: fixed; top: 54px; right: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); padding: 5px 10px; border-radius: 6px; }
+#micInfo { white-space: pre-line; text-align: right; position: fixed; top: 54px; right: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); padding: 5px 10px; border-radius: 6px; }
 .lang:empty { display: none; }
 #prep { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); font: 700 13px/1.4 "Zen Kaku Gothic New", sans-serif; color: #1a0c13; background: #ffd23f; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
 #diagBtn { position: fixed; top: 50px; left: 12px; font: 700 12px/1.4 "Zen Kaku Gothic New", sans-serif; color: #fff; background: rgba(10, 8, 30, .75); border: 1px solid rgba(255,255,255,.4); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
@@ -298,7 +298,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
     <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
     <p class="hint"><a href="../" style="color:inherit">Textileafの紹介ページ</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">お問い合わせ</a>　<a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit">利用規約</a></p>
-    <p class="hint" id="ver">バージョン 10</p>
+    <p class="hint" id="ver">バージョン 11</p>
   </form>
 </div>
 
@@ -359,7 +359,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
       q.set('room', room);
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '10');
+      q.set('v', '11');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
@@ -491,7 +491,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     diagBtn.hidden = false;
     function diagText() {
       var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
-      var lines = ['バージョン 10', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
+      var lines = ['バージョン 11', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
         '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
       Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
       return lines.join('\n');
@@ -777,7 +777,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       try { localStorage.setItem('textileaf-visitor', visitor); } catch (e) {}
     }
     try {
-      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '10' })
+      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '11' })
         .then(function () {}, function () {});
     } catch (e) {}
   }
@@ -808,7 +808,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
           else if (!isObs) return;
           else if (p.k === 'chat') {
             var c = cleanMsg(p.m);
-            if (c) renderResolved(c, String(p.lang || '').slice(0, 3), typeof p.tr === 'string' ? p.tr.slice(0, 600) : null);
+            try { if (c) renderResolved(c, String(p.lang || '').slice(0, 3), typeof p.tr === 'string' ? p.tr.slice(0, 600) : null); }
+            catch (e) { status('表示エラー: ' + (e && e.message ? e.message : e)); }
           }
           else if (p.k === 'del' && (p.key === 'id' || p.key === 'uid')) removeWhere(p.key, String(p.val || ''), true);
           else if (p.k === 'clear') clearAll(true);
@@ -854,18 +855,21 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!subCfg.on || !SR || isObs) return;
     var btn = document.getElementById('mic'), infoEl = document.getElementById('micInfo');
-    var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null;
+    var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null, micName = '';
     btn.hidden = false;
     function paint() { btn.textContent = on ? '字幕を停止' : '字幕を開始'; btn.setAttribute('aria-pressed', String(on)); }
     function render() {
       var n = Math.min(5, Math.round(level * 5));
-      infoEl.textContent = 'マイク入力 ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state + (relay.state ? '　' + relay.state : '');
+      infoEl.textContent = 'マイク入力 ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state + (relay.state ? '　' + relay.state : '') + (micName ? '\n使用中のマイク: ' + micName : '');
     }
     function setState(t) { state = t; infoEl.hidden = false; render(); }
     relay.onstate = function () { if (on) render(); };
     function meter(s) {
       try {
         ac = new (window.AudioContext || window.webkitAudioContext)();
+        if (ac.state === 'suspended' && ac.resume) ac.resume();
+        var tr0 = s.getAudioTracks()[0];
+        micName = tr0 && tr0.label ? tr0.label.slice(0, 40) : '';
         var an = ac.createAnalyser(); an.fftSize = 512;
         ac.createMediaStreamSource(s).connect(an);
         var buf = new Uint8Array(an.fftSize);
@@ -996,7 +1000,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('#' + channel + ' に接続しました（バージョン 10）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('#' + channel + ' に接続しました（バージョン 11）', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
