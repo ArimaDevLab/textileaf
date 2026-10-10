@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Textileaf｜配信の翻訳オーバーレイ</title>
-<meta name="description" content="Twitchのチャットを翻訳して配信画面に重ねるオーバーレイ。話した言葉も翻訳字幕になります。無料の試作版。">
+<title>Textileaf | Translated chat overlay for Twitch</title>
+<meta name="description" content="Textileaf translates your Twitch chat and layers it over your stream. Your voice becomes translated captions, too. Free beta.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;700&family=Shippori+Mincho:wght@500;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
 <style>
 /* Layout: ステッカー風の一枚もの。主役は動く配信画面のデモで、その前後を短い文章で挟む。 */
@@ -270,20 +270,20 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
 
 <header class="wrap top">
   <a class="logo" href="./"><i></i>Textileaf</a>
-  <a class="go" href="app/">使ってみる</a>
+  <a class="go" href="app/">Try it</a>
 </header>
 
 <main>
   <section class="hero wrap">
     <span class="float f1">EN</span><span class="float y f2">ES</span><span class="float m f3">KO</span>
     <span class="float m f4">FR</span><span class="float y f5">PT</span><span class="float f6">ZH</span>
-    <span class="eyebrow">Twitch配信者のための翻訳オーバーレイ</span>
-    <h1><span>海外リスナーのコメントが、</span><br><span><em>その場で読める。</em></span></h1>
-    <p class="lead">Textileaf（テキスリーフ）は、Twitchのチャットを翻訳して配信画面に重ねて表示します。あなたが話した言葉も、翻訳字幕になって画面に出ます。</p>
+    <span class="eyebrow">A translation overlay for Twitch streamers</span>
+    <h1><span>Read every chat message,</span><br><span><em>in your language.</em></span></h1>
+    <p class="lead">Textileaf translates your Twitch chat and layers it right over your stream. What you say becomes translated captions too, so viewers from anywhere can follow along.</p>
     <div class="cta">
-      <a class="btn" href="app/">無料で使ってみる</a>
-      <a class="btn ghost" href="#demo">動きを見る</a>
-      <small>登録は要りません。いまは試作版です。</small>
+      <a class="btn" href="app/">Try it free</a>
+      <a class="btn ghost" href="#demo">See it move</a>
+      <small>No sign-up. Free while in beta.</small>
     </div>
   </section>
 
@@ -295,30 +295,30 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
           <div class="live"><i></i>LIVE</div>
           <div class="sub" id="sub"><p class="sub-ja" id="subJa"></p><p class="sub-en" id="subEn"></p></div>
           <div class="danmaku" id="danmaku" aria-hidden="true"></div>
-          <ul class="chat" id="chat" aria-label="翻訳チャットのサンプル"></ul>
+          <ul class="chat" id="chat" aria-label="Sample of translated chat"></ul>
         </div>
       </div>
     </div>
     <div class="controls">
-      <span class="label">テーマ</span>
+      <span class="label">Theme</span>
       <div class="chips" id="skins">
-        <button type="button" data-skin="pop" aria-pressed="true">ポップ</button>
-        <button type="button" data-skin="pixel" aria-pressed="false">ドット</button>
-        <button type="button" data-skin="neon" aria-pressed="false">ネオン</button>
-        <button type="button" data-skin="sumi" aria-pressed="false">墨</button>
+        <button type="button" data-skin="pop" aria-pressed="true">Pop</button>
+        <button type="button" data-skin="pixel" aria-pressed="false">Pixel</button>
+        <button type="button" data-skin="neon" aria-pressed="false">Neon</button>
+        <button type="button" data-skin="sumi" aria-pressed="false">Sumi</button>
       </div>
-      <span class="label">表示</span>
+      <span class="label">Display</span>
       <div class="chips" id="modes">
-        <button type="button" data-mode="cards" aria-pressed="true">カード</button>
-        <button type="button" data-mode="dm" aria-pressed="false">弾幕</button>
+        <button type="button" data-mode="cards" aria-pressed="true">Cards</button>
+        <button type="button" data-mode="dm" aria-pressed="false">Bullet chat</button>
       </div>
       <div class="chips">
-        <button type="button" id="btnHl">ハイライト演出</button>
-        <button type="button" id="btnRush">コメントラッシュ</button>
+        <button type="button" id="btnHl">Highlight</button>
+        <button type="button" id="btnRush">Chat rush</button>
       </div>
       <p class="skin-desc" id="skinDesc"></p>
     </div>
-    <p class="demo-note">これはサンプルの動きです。背景は配信映像の代わりで、実際のオーバーレイは背景が透明です。</p>
+    <p class="demo-note">A sample animation. The background stands in for your stream; the real overlay is transparent.</p>
   </section>
 
   <div class="ribbon-wrap"><div class="ribbon" aria-hidden="true">
@@ -327,80 +327,80 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
   </div></div>
 
   <section class="wrap">
-    <h2 class="reveal">配信画面に、ことばの壁をなくす仕掛けを。</h2>
+    <h2 class="reveal">Take the language barrier off your stream.</h2>
     <div class="grid">
       <div class="feat reveal">
-        <span class="kbd">チャット翻訳</span>
-        <h3>海外からのコメントを翻訳して表示</h3>
-        <p>英語、スペイン語、韓国語などのコメントを日本語にして、配信画面に出します。右側に積み上がるカード表示と、画面を横に流れる弾幕表示を選べます。</p>
+        <span class="kbd">Chat translation</span>
+        <h3>Every message, in your language</h3>
+        <p>Messages in Spanish, Japanese, Korean and more appear on your stream already translated. Stack them as cards, or let them fly across the screen as bullet chat.</p>
       </div>
       <div class="feat reveal">
-        <span class="kbd">音声字幕</span>
-        <h3>話した言葉が、翻訳字幕になる</h3>
-        <p>マイクの声を聞き取り、翻訳した字幕を画面に出します。日本語で話したまま、海外のリスナーにも内容が伝わります。</p>
+        <span class="kbd">Live captions</span>
+        <h3>Your voice, as translated captions</h3>
+        <p>Textileaf listens to your mic and puts translated captions on screen. Keep talking in your own language while international viewers follow along.</p>
       </div>
       <div class="feat reveal">
-        <span class="kbd">テーマ</span>
-        <h3>配信の雰囲気に合わせて4種類</h3>
-        <p>ポップ、ドット、ネオン、墨。コメントの現れ方も、翻訳の出方も、テーマごとに違います。文字の大きさも調整できます。</p>
+        <span class="kbd">Themes</span>
+        <h3>Four looks to match your stream</h3>
+        <p>Pop, Pixel, Neon and Sumi. Each theme has its own entrance and its own way of revealing the translation. Text size is adjustable.</p>
       </div>
       <div class="feat reveal">
-        <span class="kbd">無料</span>
-        <h3>翻訳は、あなたのパソコンの中で</h3>
-        <p>コメントの翻訳はパソコンのChromeが行います。利用料も、翻訳の回数の上限もありません。</p>
+        <span class="kbd">Free</span>
+        <h3>Translation runs on your own computer</h3>
+        <p>Chrome’s built-in translator does the work on your PC. No fees and no limit on how much chat gets translated.</p>
       </div>
     </div>
   </section>
 
   <section class="wrap">
-    <h2 class="reveal">使い方は3つの手順です。</h2>
+    <h2 class="reveal">Set up in three steps.</h2>
     <ol class="steps">
-      <li class="reveal"><h3>チャンネル名を入れる</h3><p>設定画面でTwitchのチャンネル名を入れ、テーマと言語を選びます。</p></li>
-      <li class="reveal"><h3>Chromeでプレビューを開く</h3><p>初回だけ翻訳データを入手します。字幕を使うときは、ここで「字幕を開始」を押します。配信中はこの画面を開いたままにします。</p></li>
-      <li class="reveal"><h3>OBSにURLを貼る</h3><p>Chromeの準備ができてからOBSを起動し、ブラウザソースを追加して、設定画面のURLを貼ります。背景は透明で、配信画面にそのまま重なります。</p></li>
+      <li class="reveal"><h3>Enter your channel</h3><p>On the setup page, type your Twitch channel name, then pick a theme and your languages.</p></li>
+      <li class="reveal"><h3>Open the preview in Chrome</h3><p>The first time, Chrome downloads its translation data. Using captions? Press “Start captions” here. Keep this tab open while you stream.</p></li>
+      <li class="reveal"><h3>Paste the URL into OBS</h3><p>Once Chrome is ready, open OBS, add a Browser source and paste the URL from the setup page. The background is transparent, so it sits right on top of your stream.</p></li>
     </ol>
   </section>
 
   <section class="wrap">
-    <h2 class="reveal">データの扱い</h2>
+    <h2 class="reveal">How your data is handled</h2>
     <ul class="data reveal">
-      <li><b>コメントの翻訳</b>あなたのパソコンのChromeの中で行います。コメントを外部の翻訳サービスに送ることはありません。</li>
-      <li><b>音声字幕</b>Chromeの音声認識機能を使います。マイクの音声は、文字にするためにGoogleの音声認識に送られます。字幕を使わなければ、マイクは使いません。</li>
-      <li><b>OBSへの中継</b>翻訳したコメントと字幕は、OBSの画面に届けるために中継サービス（Supabase）を通ります。中継するだけで、保存はしません。</li>
-      <li><b>Twitch</b>チャットは読み取り専用で取得します。Twitchへのログインは不要で、Textileafがコメントを書き込むことはありません。</li>
-      <li><b>利用状況の記録</b>何人に使われているかを知るため、プレビューを開いたときに、日時、ブラウザごとのランダムな番号、選んだテーマと表示方法を記録します。チャンネル名、コメント、音声は記録しません。</li>
-      <li><b>集めていないもの</b>会員登録はなく、名前やメールアドレスなどの個人情報は集めていません。</li>
+      <li><b>Chat translation</b>Happens inside Chrome on your computer. Messages are never sent to an outside translation service.</li>
+      <li><b>Live captions</b>Uses Chrome’s speech recognition. Your mic audio is sent to Google’s speech recognition to be turned into text. If you don’t use captions, the mic stays off.</li>
+      <li><b>Relay to OBS</b>Translated messages and captions pass through a relay service (Supabase) to reach your OBS overlay. They are passed along, not stored.</li>
+      <li><b>Twitch</b>Chat is read-only. No Twitch login is needed, and Textileaf never posts in your chat.</li>
+      <li><b>Usage stats</b>To see how many people use Textileaf, we record the time, a random ID for your browser, and the theme and display you chose when a preview opens. Channel names, messages and audio are never recorded.</li>
+      <li><b>What we don’t collect</b>There are no accounts. We don’t collect names, email addresses or other personal information.</li>
     </ul>
   </section>
 
   <section class="wrap">
-    <h2 class="reveal">よくある質問</h2>
+    <h2 class="reveal">Questions</h2>
     <div class="faq">
-      <details><summary>料金はかかりますか？</summary><p>いまは試作版で、すべて無料です。</p></details>
-      <details><summary>視聴者は何か入れる必要がありますか？</summary><p>ありません。翻訳と字幕は配信画面に表示されるので、見ている人は全員そのまま読めます。</p></details>
-      <details><summary>使うのに何が必要ですか？</summary><p>パソコンのChromeと、OBSのようにブラウザソースを使える配信ソフトです。スマートフォンだけでは使えません。</p></details>
-      <details><summary>YouTubeの配信で使えますか？</summary><p>いまはTwitchだけです。YouTube Liveへの対応は検討中です。</p></details>
-      <details><summary>削除したコメントはどうなりますか？</summary><p>Twitchで削除されたコメントは、オーバーレイからも消えます。</p></details>
-      <details><summary>字幕が出ません。マイクの音が届いていないようです。</summary><p>配信ソフトを先に起動していると、Chromeにマイクの音が届かないことがあります。配信ソフトをいったん終了し、Chromeで「字幕を開始」を押してから、配信ソフトを起動し直してください。</p></details>
-      <details><summary>不具合や要望はどこに送ればいいですか？</summary><p>運営のArimaDevLabまでお知らせください。<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">ポートフォリオサイトのお問い合わせ</a>、またはメール（<a href="mailto:arima.dev.lab@outlook.jp">arima.dev.lab@outlook.jp</a>）で受け付けています。</p></details>
-      <details><summary>どの言語に翻訳できますか？</summary><p>コメントの翻訳先は、日本語、英語、韓国語、中国語、スペイン語から選べます。字幕も同じ言語から選べます。</p></details>
+      <details><summary>Is it free?</summary><p>Yes. Textileaf is in beta and completely free.</p></details>
+      <details><summary>Do my viewers need to install anything?</summary><p>No. Translations and captions are part of your stream, so everyone watching sees them.</p></details>
+      <details><summary>What do I need?</summary><p>Chrome on a computer, plus OBS or another streaming app that supports browser sources. A phone alone won’t work.</p></details>
+      <details><summary>Does it work with YouTube?</summary><p>Twitch only for now. YouTube Live support is under consideration.</p></details>
+      <details><summary>What happens to deleted messages?</summary><p>Messages deleted on Twitch disappear from the overlay too.</p></details>
+      <details><summary>My captions don’t show up. The mic seems silent.</summary><p>If OBS starts first, Chrome sometimes gets no sound from your mic. Close OBS, press “Start captions” in Chrome, then open OBS again.</p></details>
+      <details><summary>Where do I send bug reports or ideas?</summary><p>Contact ArimaDevLab through the <a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">contact form on our portfolio site</a> or by email at <a href="mailto:arima.dev.lab@outlook.jp">arima.dev.lab@outlook.jp</a>.</p></details>
+      <details><summary>Which languages are supported?</summary><p>Chat and captions can be translated into English, Spanish, Portuguese, French, German, Japanese, Korean or Chinese (Simplified). Incoming chat can be in many more languages.</p></details>
     </div>
   </section>
 
   <section class="wrap last">
     <div class="box reveal">
-      <h2>次の配信から、<br>試してみませんか。</h2>
-      <a class="btn" href="app/">無料で使ってみる</a>
+      <h2>Try it on<br>your next stream.</h2>
+      <a class="btn" href="app/">Try it free</a>
     </div>
   </section>
 </main>
 
-<footer class="wrap"><p class="links"><a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">運営: ArimaDevLab</a><a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">お問い合わせ</a><a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener">利用規約</a><a href="mailto:arima.dev.lab@outlook.jp">arima.dev.lab@outlook.jp</a></p>Textileaf 試作版。TwitchはTwitch Interactive, Inc.の商標です。本サービスはTwitchの公式サービスではありません。</footer>
+<footer class="wrap"><p class="links"><a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">By ArimaDevLab</a><a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener">Contact</a><a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener">Terms (Japanese)</a><a href="mailto:arima.dev.lab@outlook.jp">arima.dev.lab@outlook.jp</a></p>Textileaf beta. Twitch is a trademark of Twitch Interactive, Inc. Textileaf is not affiliated with Twitch.</footer>
 
 <script>
 document.documentElement.classList.add('js');
 (function () {
-  var A = [['EN', 'That clutch was insane!', '今の逆転すごすぎ！'], ['ES', '¡Saludos desde México!', 'メキシコからこんにちは！'], ['KO', '오늘 방송 너무 재밌어요', '今日の配信すごく面白いです'], ['FR', 'Tu joues depuis combien de temps ?', 'どれくらいプレイしてるの？'], ['PT', 'Primeira vez aqui, adorei!', '初めて来たけど最高！'], ['DE', 'Grüße aus Berlin!', 'ベルリンからこんにちは！']];
+  var A = [['JA', '今の逆転すごすぎ！', 'That comeback was insane!'], ['ES', '¡Saludos desde México!', 'Greetings from Mexico!'], ['KO', '오늘 방송 너무 재밌어요', 'Today’s stream is so much fun'], ['FR', 'Tu joues depuis combien de temps ?', 'How long have you been playing?'], ['PT', 'Primeira vez aqui, adorei!', 'First time here, loved it!'], ['DE', 'Grüße aus Berlin!', 'Greetings from Berlin!']];
   function fill(id, pick) {
     var row = document.getElementById(id);
     for (var r = 0; r < 2; r++) A.forEach(function (a) {
@@ -429,30 +429,30 @@ document.documentElement.classList.add('js');
   var MAX = 5;
 
   var MSGS = [
-    { u: 'ben_k', l: 'EN', o: 'That clutch was insane!', t: '今の逆転すごすぎ！' },
-    { u: 'luna_mx', l: 'ES', o: '¡Saludos desde México!', t: 'メキシコからこんにちは！' },
-    { u: 'taeyang92', l: 'KO', o: '오늘 방송 너무 재밌어요', t: '今日の配信すごく面白いです' },
-    { u: 'camille_b', l: 'FR', o: 'Tu joues depuis combien de temps ?', t: 'どれくらいプレイしてるの？' },
-    { u: 'pixelbruno', l: 'PT', o: 'Primeira vez aqui, adorei!', t: '初めて来たけど最高！' },
-    { u: 'sora_tabi', l: 'JA', o: 'ないすー', t: null },
-    { u: 'nordlicht', l: 'DE', o: 'Grüße aus Berlin!', t: 'ベルリンからこんにちは！' },
-    { u: 'xiaoyu', l: 'ZH', o: '主播加油！', t: '配信者さんがんばって！' },
-    { u: 'ben_k', l: 'EN', o: "What's the name of this song?", t: 'この曲の名前は？' },
-    { u: 'raka.id', l: 'ID', o: 'Halo dari Jakarta', t: 'ジャカルタからこんにちは' },
-    { u: 'mali_th', l: 'TH', o: 'สนุกมากเลย', t: 'すごく楽しい' },
-    { u: 'luna_mx', l: 'ES', o: 'Ese jefe fue eterno, GG', t: 'あのボス長かったね、GG' }
+    { u: 'sora_tabi', l: 'JA', o: '今の逆転すごすぎ！', t: 'That comeback was insane!' },
+    { u: 'luna_mx', l: 'ES', o: '¡Saludos desde México!', t: 'Greetings from Mexico!' },
+    { u: 'taeyang92', l: 'KO', o: '오늘 방송 너무 재밌어요', t: 'Today’s stream is so much fun' },
+    { u: 'camille_b', l: 'FR', o: 'Tu joues depuis combien de temps ?', t: 'How long have you been playing?' },
+    { u: 'pixelbruno', l: 'PT', o: 'Primeira vez aqui, adorei!', t: 'First time here, loved it!' },
+    { u: 'ben_k', l: 'EN', o: 'gg', t: null },
+    { u: 'nordlicht', l: 'DE', o: 'Grüße aus Berlin!', t: 'Greetings from Berlin!' },
+    { u: 'xiaoyu', l: 'ZH', o: '主播加油！', t: 'Go go, streamer!' },
+    { u: 'yuki_m', l: 'JA', o: 'この曲なんて名前？', t: 'What’s the name of this song?' },
+    { u: 'raka.id', l: 'ID', o: 'Halo dari Jakarta', t: 'Hello from Jakarta' },
+    { u: 'mali_th', l: 'TH', o: 'สนุกมากเลย', t: 'This is so much fun' },
+    { u: 'luna_mx', l: 'ES', o: 'Ese jefe fue eterno, GG', t: 'That boss took forever, GG' }
   ];
   var SUBS = [
-    { ja: 'みんな来てくれてありがとう！', en: 'Thanks for coming, everyone!' },
-    { ja: '次のステージ、かなり難しいらしいよ', en: 'I hear the next stage is pretty tough.' },
-    { ja: 'コメント全部読んでるからね', en: "I'm reading every comment." },
-    { ja: 'ちょっと水飲むね', en: 'Let me grab some water.' }
+    { ja: 'Thanks for coming, everyone!', en: '¡Gracias a todos por venir!' },
+    { ja: 'I hear the next stage is pretty tough.', en: 'Dicen que el siguiente nivel es bastante difícil.' },
+    { ja: "I'm reading every comment.", en: 'Estoy leyendo todos los comentarios.' },
+    { ja: 'Let me grab some water.', en: 'Voy por un poco de agua.' }
   ];
   var DESC = {
-    neon: '右から滑り込み、翻訳は文字化けを解読するように現れます。',
-    pop: '弾むように飛び出します。ハイライトでは星がはじけます。',
-    sumi: '筆で払うように現れ、翻訳の下に墨の一筆が走ります。',
-    pixel: 'ゲームの会話ウィンドウ風。翻訳は1文字ずつ打ち出されます。'
+    neon: 'Slides in from the right. The translation decodes out of scrambled text.',
+    pop: 'Bounces in. Highlights burst into stars.',
+    sumi: 'Sweeps in like a brush stroke, with an ink line under the translation.',
+    pixel: 'A retro game dialog box. The translation types out letter by letter.'
   };
 
   var idx = 0, count = 0;
@@ -461,7 +461,7 @@ document.documentElement.classList.add('js');
   function skin() { return inner.dataset.skin; }
 
   /* ---- 翻訳の出し方（テーマ別） ---- */
-  var POOL = 'アカサタナハマヤラワ0123456789#%&$';
+  var POOL = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&$';
   function reveal(li, text) {
     var el = li.querySelector('.tr-text');
     if (!el) return;
@@ -506,8 +506,8 @@ document.documentElement.classList.add('js');
     var li = document.createElement('li');
     li.className = 'msg' + (hl ? ' hl' : '');
     li.innerHTML = '<div class="msg-in"><div class="card"><div class="meta"><span class="lang"></span><span class="user"></span>' +
-      (hl ? '<span class="hl-tag">ハイライト</span>' : '') + '</div><p class="orig"></p>' +
-      (m.t ? '<p class="tr"><span class="tr-wait">翻訳中…</span><span class="tr-text"></span></p>' : '') + '</div></div>';
+      (hl ? '<span class="hl-tag">Highlight</span>' : '') + '</div><p class="orig"></p>' +
+      (m.t ? '<p class="tr"><span class="tr-wait">Translating…</span><span class="tr-text"></span></p>' : '') + '</div></div>';
     li.querySelector('.lang').textContent = m.l;
     li.querySelector('.user').textContent = m.u;
     li.querySelector('.orig').textContent = m.o;

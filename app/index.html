@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Textileaf 設定</title>
+<title>Textileaf Setup</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+1+Code:wght@400;700&family=Shippori+Mincho:wght@500;800&family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@500;900&display=swap">
 <style>
 
@@ -226,79 +226,90 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
 <body>
 
 <div id="setup" hidden>
-  <h1>Textileaf 設定</h1>
-  <p>Twitchのチャンネル名を入れて「プレビューを開く」を押すと、実際のチャットが翻訳されて流れます。配信中のチャンネルで試してください。</p>
+  <h1>Textileaf setup</h1>
+  <p>Enter a Twitch channel name and press “Open preview”. Its live chat will appear on screen, translated. Try it with a channel that is live right now.</p>
   <form id="form">
-    <label>Twitchのチャンネル名（URLの twitch.tv/ の後ろの部分）
-      <input type="text" id="fChannel" placeholder="例: channel_name" autocomplete="off" spellcheck="false">
+    <label>Twitch channel name (the part after twitch.tv/)
+      <input type="text" id="fChannel" placeholder="e.g. channel_name" autocomplete="off" spellcheck="false">
     </label>
     <div class="two">
-      <label>テーマ
+      <label>Theme
         <select id="fSkin">
-          <option value="pop">ポップ</option>
-          <option value="pixel">ドット</option>
-          <option value="neon">ネオン</option>
-          <option value="sumi">墨</option>
+          <option value="pop">Pop</option>
+          <option value="pixel">Pixel</option>
+          <option value="neon">Neon</option>
+          <option value="sumi">Sumi (ink)</option>
         </select>
       </label>
-      <label>表示モード
+      <label>Display
         <select id="fMode">
-          <option value="cards">カード</option>
-          <option value="dm">弾幕（横に流す）</option>
+          <option value="cards">Cards</option>
+          <option value="dm">Bullet chat (scrolling)</option>
         </select>
       </label>
     </div>
     <div class="two">
-      <label>翻訳先の言語
+      <label>Translate chat into
         <select id="fLang">
-          <option value="ja">日本語</option>
-          <option value="en">英語</option>
-          <option value="ko">韓国語</option>
-          <option value="zh-CN">中国語（簡体字）</option>
-          <option value="es">スペイン語</option>
+          <option value="en">English</option>
+          <option value="es">Spanish</option>
+          <option value="pt">Portuguese</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="ja">Japanese</option>
+          <option value="ko">Korean</option>
+          <option value="zh-CN">Chinese (Simplified)</option>
         </select>
       </label>
-      <label>文字サイズ
+      <label>Text size
         <select id="fScale">
-          <option value="0.85">小</option>
-          <option value="1" selected>標準</option>
-          <option value="1.2">大</option>
+          <option value="0.85">Small</option>
+          <option value="1" selected>Normal</option>
+          <option value="1.2">Large</option>
         </select>
       </label>
     </div>
-    <label class="inline"><input type="checkbox" id="fForeign"> 翻訳先と同じ言語のコメントは表示しない</label>
-    <label class="inline"><input type="checkbox" id="fOrig" checked> 原文も表示する</label>
-    <label class="inline"><input type="checkbox" id="fSub" checked> 音声字幕を使う（このパソコンのマイクを使います）</label>
+    <label class="inline"><input type="checkbox" id="fForeign"> Hide messages already in my language</label>
+    <label class="inline"><input type="checkbox" id="fOrig" checked> Show the original message too</label>
+    <label class="inline"><input type="checkbox" id="fSub" checked> Live captions of my voice (uses this computer’s mic)</label>
     <div class="two">
-      <label>話す言語
+      <label>I speak
         <select id="fSpeak">
-          <option value="ja-JP">日本語</option>
-          <option value="en-US">英語</option>
-          <option value="ko-KR">韓国語</option>
+          <option value="en-US">English</option>
+          <option value="es-ES">Spanish</option>
+          <option value="pt-BR">Portuguese</option>
+          <option value="fr-FR">French</option>
+          <option value="de-DE">German</option>
+          <option value="ja-JP">Japanese</option>
+          <option value="ko-KR">Korean</option>
         </select>
       </label>
-      <label>字幕の翻訳先
+      <label>Translate captions into
         <select id="fSubLang">
-          <option value="en">英語</option>
-          <option value="ja">日本語</option>
-          <option value="ko">韓国語</option>
-          <option value="zh-CN">中国語（簡体字）</option>
-          <option value="es">スペイン語</option>
+          <option value="es">Spanish</option>
+          <option value="en">English</option>
+          <option value="pt">Portuguese</option>
+          <option value="fr">French</option>
+          <option value="de">German</option>
+          <option value="ja">Japanese</option>
+          <option value="ko">Korean</option>
+          <option value="zh-CN">Chinese (Simplified)</option>
         </select>
       </label>
     </div>
     <div class="btns">
-      <button type="submit">プレビューを開く</button>
-      <button type="button" class="sub2" id="btnDemo">サンプルで動きを見る</button>
+      <button type="submit">Open preview</button>
+      <button type="button" class="sub2" id="btnDemo">Watch a sample</button>
     </div>
-    <label>OBSのブラウザソースに貼るURL
+    <label>URL for your OBS browser source
       <textarea id="fUrl" readonly></textarea>
     </label>
-    <div class="btns"><button type="button" class="sub2" id="btnCopy">URLをコピー</button></div>
-    <p class="hint">使い方: まずChromeで「プレビューを開く」を押し、その画面を開いたまま配信します。音声字幕を使うときは、先にこの画面で「字幕を開始」を押してから、配信ソフトを起動してください。順番が逆だと、マイクの音が届かないことがあります。翻訳と音声字幕はChromeの画面で行い、結果がOBSに送られます。Chromeの画面を閉じると、OBSには何も出ません。</p>
-    <p class="hint">OBSでは「ソース」→「ブラウザ」を追加し、「ローカルファイル」のチェックは外したまま、上のURLを貼ります。幅1920、高さ1080がおすすめです。URLは他の人に見せないでください。</p>
-    <p class="hint"><a href="../" style="color:inherit">Textileafの紹介ページ</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">お問い合わせ</a>　<a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit">利用規約</a></p>
-    <p class="hint" id="ver">バージョン 12</p>
+    <div class="btns"><button type="button" class="sub2" id="btnCopy">Copy URL</button></div>
+    <p class="hint">How it works: open the preview in Chrome and keep that tab open while you stream. Chrome does the translating and captioning, then sends the results to OBS. If you close the Chrome tab, nothing shows up in OBS.</p>
+    <p class="hint">Using captions? Press “Start captions” in the preview first, then launch OBS. On some computers the mic stays silent for Chrome if OBS grabs it first.</p>
+    <p class="hint">In OBS, add Sources → Browser, leave “Local file” unchecked, and paste the URL above. Width 1920 and height 1080 work well. Keep this URL private.</p>
+    <p class="hint"><a href="../" style="color:inherit">About Textileaf</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">Contact</a>　<a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit">Terms (Japanese)</a></p>
+    <p class="hint" id="ver">Version 13</p>
   </form>
 </div>
 
@@ -311,10 +322,10 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   </div>
 </div>
 <div id="status" hidden></div>
-<button type="button" id="mic" aria-pressed="false" hidden>字幕を開始</button>
+<button type="button" id="mic" aria-pressed="false" hidden>Start captions</button>
 <div id="micInfo" hidden></div>
 <button type="button" id="prep" hidden></button>
-<button type="button" id="diagBtn" hidden>診断</button>
+<button type="button" id="diagBtn" hidden>Diagnostics</button>
 <pre id="diagBox" hidden></pre>
 
 <script>
@@ -326,7 +337,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   var cfg = {
     skin: SKINS.indexOf(P.get('skin')) >= 0 ? P.get('skin') : 'pop',
     mode: P.get('mode') === 'dm' ? 'dm' : 'cards',
-    tl: P.get('lang') || 'ja',
+    tl: P.get('lang') || 'en',
     foreign: P.get('foreign') === '1',
     orig: P.get('orig') !== '0',
     scale: Math.min(1.6, Math.max(0.6, parseFloat(P.get('scale')) || 1)),
@@ -359,12 +370,12 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       if ($('fSub').checked) { q.set('sub', '1'); q.set('speak', $('fSpeak').value); q.set('sublang', $('fSubLang').value); }
       q.set('room', room);
       for (var k in extra) q.set(k, extra[k]);
-      q.set('v', '12');
+      q.set('v', '13');
       return { ch: ch, url: base + '?' + q.toString() };
     }
     function refresh() {
       var b = build({ role: 'obs' });
-      $('fUrl').value = b.ch ? b.url : 'チャンネル名を入れるとURLが出ます';
+      $('fUrl').value = b.ch ? b.url : 'Enter a channel name to get your URL';
     }
     $('form').addEventListener('input', refresh);
     $('form').addEventListener('submit', function (e) {
@@ -376,7 +387,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     $('btnDemo').addEventListener('click', function () { location.href = build({ preview: '1', demo: '1' }).url; });
     $('btnCopy').addEventListener('click', function () {
       var t = $('fUrl');
-      navigator.clipboard.writeText(t.value).then(function () { $('btnCopy').textContent = 'コピーしました'; },
+      navigator.clipboard.writeText(t.value).then(function () { $('btnCopy').textContent = 'Copied'; },
         function () { t.focus(); t.select(); });
     });
     refresh();
@@ -413,14 +424,14 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     return code.split('-')[0].toLowerCase();
   }
   /* Chrome内蔵の翻訳（パソコン内で処理。費用がかからない） */
-  var diag = { det: '未確認', pairs: {}, last: 'なし', ok: 0, ng: 0 };
-  function errText(e) { return e ? (e.name || 'Error') + ': ' + (e.message || '') : '不明'; }
+  var diag = { det: 'not checked', pairs: {}, last: 'none', ok: 0, ng: 0 };
+  function errText(e) { return e ? (e.name || 'Error') + ': ' + (e.message || '') : 'unknown'; }
   var detector = null, translators = {}, pendingTr = {}, needClick = {}, needDet = false, prepBusy = false;
   var prepBtn = document.getElementById('prep');
   function prepUI() {
     var n = Object.keys(needClick).length + (needDet ? 1 : 0);
     prepBtn.hidden = isObs || prepBusy || n === 0;
-    prepBtn.textContent = '翻訳データを入手する（' + n + '件・初回のみ）';
+    prepBtn.textContent = 'Download translation data (' + n + ' item' + (n === 1 ? '' : 's') + ', first time only)';
   }
   function quickLang(text) {
     if (/[぀-ヿ]/.test(text)) return 'ja';
@@ -441,9 +452,9 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   function createTranslator(src, tl) {
     var key = src + '>' + tl;
     return Translator.create({ sourceLanguage: src, targetLanguage: tl }).then(function (t) {
-      translators[key] = t; delete needClick[key]; diag.pairs[key] = '作成済み'; prepUI(); return t;
+      translators[key] = t; delete needClick[key]; diag.pairs[key] = 'ready'; prepUI(); return t;
     }, function (e) {
-      diag.pairs[key] = '作成失敗 ' + errText(e);
+      diag.pairs[key] = 'failed ' + errText(e);
       if (e && e.name === 'NotAllowedError') { needClick[key] = [src, tl]; prepUI(); }
       throw e;
     });
@@ -473,26 +484,26 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   function initBuiltin() {
     var tl = bl(cfg.tl), pairs = [];
     ['en', 'es', 'pt', 'ko', 'zh', 'fr', 'de', 'ru', 'id', 'th', 'ja'].forEach(function (src) { if (src !== tl) pairs.push([src, tl]); });
-    var sp = bl(P.get('speak') || 'ja-JP'), st = bl(P.get('sublang') || 'en');
+    var sp = bl(P.get('speak') || 'en-US'), st = bl(P.get('sublang') || 'es');
     if (P.get('sub') === '1' && sp !== st) pairs.push([sp, st]);
     LanguageDetector.availability().then(function (a) {
       diag.det = a;
-      if (a === 'available') return LanguageDetector.create().then(function (d) { detector = d; diag.det = '作成済み'; });
+      if (a === 'available') return LanguageDetector.create().then(function (d) { detector = d; diag.det = 'ready'; });
       if (a !== 'unavailable') { needDet = true; prepUI(); }
-    }).catch(function (e) { diag.det = '失敗 ' + errText(e); });
+    }).catch(function (e) { diag.det = 'failed ' + errText(e); });
     pairs.forEach(function (pr) {
       Translator.availability({ sourceLanguage: pr[0], targetLanguage: pr[1] }).then(function (a) {
         diag.pairs[pr[0] + '>' + pr[1]] = a;
         if (a === 'available') getTranslator(pr[0], pr[1]).catch(function () {});
         else if (a !== 'unavailable') { needClick[pr[0] + '>' + pr[1]] = pr; prepUI(); }
-      }).catch(function (e) { diag.pairs[pr[0] + '>' + pr[1]] = '確認失敗 ' + errText(e); });
+      }).catch(function (e) { diag.pairs[pr[0] + '>' + pr[1]] = 'check failed ' + errText(e); });
     });
     var diagBtn = document.getElementById('diagBtn'), diagBox = document.getElementById('diagBox');
     diagBtn.hidden = false;
     function diagText() {
       var ua = /Chrome\/([\d.]+)/.exec(navigator.userAgent);
-      var lines = ['バージョン 12', 'Chrome: ' + (ua ? ua[1] : '不明'), '翻訳の方式: ' + engineName, '翻訳先: ' + bl(cfg.tl),
-        '言語の判定: ' + diag.det, '成功 ' + diag.ok + ' 件 / 失敗 ' + diag.ng + ' 件', '最後の失敗: ' + diag.last, '入手待ち: ' + (Object.keys(needClick).join(', ') || 'なし'), '--- 言語の組み合わせ ---'];
+      var lines = ['Version 13', 'Chrome: ' + (ua ? ua[1] : 'unknown'), 'Engine: ' + engineName, 'Target: ' + bl(cfg.tl),
+        'Language detector: ' + diag.det, 'Translated ' + diag.ok + ' / failed ' + diag.ng, 'Last failure: ' + diag.last, 'Waiting for download: ' + (Object.keys(needClick).join(', ') || 'none'), '--- Language pairs ---'];
       Object.keys(diag.pairs).forEach(function (k) { lines.push(k + '  ' + diag.pairs[k]); });
       return lines.join('\n');
     }
@@ -501,20 +512,20 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     prepBtn.addEventListener('click', function () {
       /* クリックの直後にまとめて開始する（ダウンロードの開始には利用者の操作が必要なため） */
       var jobs = [];
-      if (needDet) jobs.push(LanguageDetector.create().then(function (d) { detector = d; needDet = false; diag.det = '作成済み'; }, function (e) { diag.det = '作成失敗 ' + errText(e); throw e; }));
+      if (needDet) jobs.push(LanguageDetector.create().then(function (d) { detector = d; needDet = false; diag.det = 'ready'; }, function (e) { diag.det = 'failed ' + errText(e); throw e; }));
       Object.keys(needClick).forEach(function (k) { jobs.push(createTranslator(needClick[k][0], needClick[k][1])); });
       var total = jobs.length, done = 0;
       prepBusy = true; prepUI();
-      status('翻訳データを入手中 0/' + total + '（数分かかることがあります）');
+      status('Downloading translation data 0/' + total + ' (this can take a few minutes)');
       Promise.all(jobs.map(function (j) {
-        return j.catch(function () {}).then(function () { done++; status('翻訳データを入手中 ' + done + '/' + total); });
+        return j.catch(function () {}).then(function () { done++; status('Downloading translation data ' + done + '/' + total); });
       })).then(function () {
         prepBusy = false; cache.clear(); prepUI();
         if (prepBtn.hidden) {
           /* 入手直後の画面では翻訳が使えないことがあるため、読み込み直して確実に使える状態にする */
-          status('翻訳データを入手しました。画面を読み込み直します…');
+          status('Translation data ready. Reloading…');
           setTimeout(function () { location.reload(); }, 1500);
-        } else status('一部の翻訳データを入手できませんでした。もう一度押してください。', true);
+        } else status('Some translation data could not be downloaded. Press the button again.', true);
       });
     });
   }
@@ -555,7 +566,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
 
   /* ---- 表示 ---- */
-  var POOL = 'アカサタナハマヤラワ0123456789#%&$';
+  var POOL = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&$';
   function reveal(li, text) {
     var el = li.querySelector('.tr-text');
     if (!el) return;
@@ -587,8 +598,8 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     li.className = 'msg' + (m.hl ? ' hl' : '');
     li.dataset.id = m.id || ''; li.dataset.uid = m.uid || '';
     li.innerHTML = '<div class="msg-in"><div class="card"><div class="meta"><span class="lang"></span><span class="user"></span>' +
-      (m.hl ? '<span class="hl-tag">ハイライト</span>' : '') + '</div><p class="orig"></p>' +
-      '<p class="tr"><span class="tr-wait">翻訳中…</span><span class="tr-text"></span></p></div></div>';
+      (m.hl ? '<span class="hl-tag">Highlight</span>' : '') + '</div><p class="orig"></p>' +
+      '<p class="tr"><span class="tr-wait">Translating…</span><span class="tr-text"></span></p></div></div>';
     li.querySelector('.lang').textContent = lang == null ? '…' : lang;
     li.querySelector('.user').textContent = m.name;
     var orig = li.querySelector('.orig');
@@ -742,7 +753,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
 
   /* ---- 音声字幕（Chromeの音声認識） ---- */
-  var subCfg = { on: P.get('sub') === '1', speak: P.get('speak') || 'ja-JP', tl: P.get('sublang') || 'en' };
+  var subCfg = { on: P.get('sub') === '1', speak: P.get('speak') || 'en-US', tl: P.get('sublang') || 'es' };
   var subEl = document.getElementById('sub'), subSrc = document.getElementById('subSrc'), subTr = document.getElementById('subTr'), subHideT;
   function subTouch() {
     subEl.classList.add('show');
@@ -777,7 +788,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       try { localStorage.setItem('textileaf-visitor', visitor); } catch (e) {}
     }
     try {
-      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '12' })
+      relay.client.from('usage_events').insert({ visitor: visitor, skin: cfg.skin, mode: cfg.mode, sub: P.get('sub') === '1', ver: '13' })
         .then(function () {}, function () {});
     } catch (e) {}
   }
@@ -792,7 +803,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
   (function () {
     var room = (P.get('room') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
-    if (room.length < 12) { if (isObs) status('URLが正しくありません。設定画面からコピーし直してください。'); return; }
+    if (room.length < 12) { if (isObs) status('This URL is incomplete. Copy it again from the setup page.'); return; }
     function setState(t) { relay.state = t; if (relay.onstate) relay.onstate(); }
     var sc = document.createElement('script');
     sc.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
@@ -809,17 +820,17 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
           else if (p.k === 'chat') {
             var c = cleanMsg(p.m);
             try { if (c) renderResolved(c, String(p.lang || '').slice(0, 3), typeof p.tr === 'string' ? p.tr.slice(0, 600) : null); }
-            catch (e) { status('表示エラー: ' + (e && e.message ? e.message : e)); }
+            catch (e) { status('Display error: ' + (e && e.message ? e.message : e)); }
           }
           else if (p.k === 'del' && (p.key === 'id' || p.key === 'uid')) removeWhere(p.key, String(p.val || ''), true);
           else if (p.k === 'clear') clearAll(true);
         });
         ch.subscribe(function (st) {
           relay.ready = st === 'SUBSCRIBED';
-          setState(relay.ready ? 'OBSへ送信できます' : 'OBSへの中継: ' + st);
+          setState(relay.ready ? 'Sending to OBS' : 'OBS link: ' + st);
           if (isObs) {
-            if (relay.ready) status('Chromeの画面からの受信を待っています', true);
-            else if (st !== 'CLOSED') status('中継に接続できません（' + st + '）');
+            if (relay.ready) status('Waiting for the Chrome preview…', true);
+            else if (st !== 'CLOSED') status('Cannot reach the relay (' + st + ')');
           }
         });
         var last = 0;
@@ -833,9 +844,9 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
           last = now;
           relay.sendObj({ k: k, text: text });
         };
-      } catch (e) { setState('OBSへの中継を開始できません'); if (isObs) status('中継を開始できません'); }
+      } catch (e) { setState('Cannot start the OBS link'); if (isObs) status('Cannot start the relay'); }
     };
-    sc.onerror = function () { setState('OBSへの中継を読み込めません'); if (isObs) status('中継を読み込めません'); };
+    sc.onerror = function () { setState('Cannot load the OBS link'); if (isObs) status('Cannot load the relay'); };
     document.head.appendChild(sc);
   })();
 
@@ -857,10 +868,10 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     var btn = document.getElementById('mic'), infoEl = document.getElementById('micInfo');
     var on = false, rec = null, stream = null, wait = 300, level = 0, state = '', ac = null, meterT = null, micName = '', meterStart = 0, heard = false, warned = false;
     btn.hidden = false;
-    function paint() { btn.textContent = on ? '字幕を停止' : '字幕を開始'; btn.setAttribute('aria-pressed', String(on)); }
+    function paint() { btn.textContent = on ? 'Stop captions' : 'Start captions'; btn.setAttribute('aria-pressed', String(on)); }
     function render() {
       var n = Math.min(5, Math.round(level * 5));
-      infoEl.textContent = 'マイク入力 ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state + (relay.state ? '　' + relay.state : '') + (micName ? '\n使用中のマイク: ' + micName : '');
+      infoEl.textContent = 'Mic ' + '■'.repeat(n) + '□'.repeat(5 - n) + '　' + state + (relay.state ? '　' + relay.state : '') + (micName ? '\nUsing: ' + micName : '');
     }
     function setState(t) { state = t; infoEl.hidden = false; render(); }
     relay.onstate = function () { if (on) render(); };
@@ -883,37 +894,37 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
           if (level > 0.12) heard = true;
           if (!heard && !warned && Date.now() - meterStart > 8000) {
             warned = true;
-            status('マイクの音が届いていません。配信ソフト（OBSなど）をいったん終了し、この画面で「字幕を開始」を押してから、配信ソフトを起動し直してください。');
+            status('No sound from your mic. Close OBS (or your streaming app), press “Start captions” here, then open OBS again.');
           }
         }, 120);
       } catch (e) {}
     }
-    var ERR = { 'no-speech': '声が聞こえません', 'audio-capture': 'マイクが見つかりません', 'language-not-supported': 'この言語は使えません', 'network': '音声認識に接続できません', 'aborted': '中断しました' };
+    var ERR = { 'no-speech': 'No speech heard', 'audio-capture': 'No mic found', 'language-not-supported': 'Language not supported', 'network': 'Cannot reach speech recognition', 'aborted': 'Stopped' };
     function begin() {
       if (!on) return;
       rec = new SR();
       rec.lang = subCfg.speak; rec.continuous = true; rec.interimResults = true;
-      rec.onstart = function () { setState('聞き取り中（' + subCfg.speak + '）'); };
-      rec.onspeechstart = function () { setState('声を検出'); };
+      rec.onstart = function () { setState('Listening (' + subCfg.speak + ')'); };
+      rec.onspeechstart = function () { setState('Hearing you'); };
       rec.onresult = function (ev) {
         wait = 300;
         var fin = '', interim = '';
         for (var i = ev.resultIndex; i < ev.results.length; i++) {
           if (ev.results[i].isFinal) fin += ev.results[i][0].transcript; else interim += ev.results[i][0].transcript;
         }
-        setState('認識中');
+        setState('Recognizing');
         if (fin) onSpeech(fin.trim(), true); else onSpeech(interim.trim(), false);
       };
       rec.onerror = function (e) {
         if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-          stop(); status('マイクが許可されていません。アドレスバーのマイクのアイコンから許可してください。');
+          stop(); status('Mic access is blocked. Allow it from the mic icon in the address bar.');
           return;
         }
         if (e.error === 'network') wait = 4000;
-        setState(ERR[e.error] || ('エラー: ' + e.error));
+        setState(ERR[e.error] || ('Error: ' + e.error));
       };
       rec.onend = function () { if (on) setTimeout(begin, wait); };
-      try { rec.start(); } catch (e) { setState('開始できません: ' + e.message); }
+      try { rec.start(); } catch (e) { setState('Cannot start: ' + e.message); }
     }
     function stop() {
       on = false; paint(); infoEl.hidden = true;
@@ -924,11 +935,11 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     }
     btn.addEventListener('click', function () {
       if (on) { stop(); return; }
-      on = true; paint(); setState('準備中');
-      status('字幕オン。話すと左下に出ます。', true);
+      on = true; paint(); setState('Starting');
+      status('Captions on. Speak and they appear at the bottom left.', true);
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) { stream = s; meter(s); begin(); }, function () {
-          stop(); status('マイクを使えませんでした。アドレスバーのマイクのアイコンから許可してください。');
+          stop(); status('Could not use the mic. Allow it from the mic icon in the address bar.');
         });
       } else begin();
     });
@@ -938,18 +949,18 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   /* ---- サンプル再生 ---- */
   if (demo) {
     var S = [
-      ['ben_k', 'en', 'That clutch was insane!', '今の逆転すごすぎ！'],
-      ['luna_mx', 'es', '¡Saludos desde México!', 'メキシコからこんにちは！'],
-      ['taeyang92', 'ko', '오늘 방송 너무 재밌어요', '今日の配信すごく面白いです'],
-      ['sora_tabi', 'ja', 'ないすー', 'ないすー'],
-      ['camille_b', 'fr', 'Tu joues depuis combien de temps ?', 'どれくらいプレイしてるの？'],
-      ['pixelbruno', 'pt', 'Primeira vez aqui, adorei!', '初めて来たけど最高！'],
-      ['nordlicht', 'de', 'Grüße aus Berlin!', 'ベルリンからこんにちは！']
+      ['sora_tabi', 'ja', '今の逆転すごすぎ！', 'That comeback was insane!'],
+      ['luna_mx', 'es', '¡Saludos desde México!', 'Greetings from Mexico!'],
+      ['taeyang92', 'ko', '오늘 방송 너무 재밌어요', 'Today’s stream is so fun'],
+      ['ben_k', 'en', 'gg', 'gg'],
+      ['camille_b', 'fr', 'Tu joues depuis combien de temps ?', 'How long have you been playing?'],
+      ['pixelbruno', 'pt', 'Primeira vez aqui, adorei!', 'First time here, loved it!'],
+      ['nordlicht', 'de', 'Grüße aus Berlin!', 'Greetings from Berlin!']
     ];
-    cfg.tl = 'ja';
-    S.forEach(function (s) { cache.set('ja|' + s[2], { t: s[3], src: s[1] }); });
+    cfg.tl = 'en';
+    S.forEach(function (s) { cache.set('en|' + s[2], { t: s[3], src: s[1] }); });
     var n = 0;
-    status('サンプルを再生中（Twitchには接続していません）', true);
+    status('Playing a sample (not connected to Twitch)', true);
     (function loop() {
       var s = S[n % S.length]; n++;
       handleChat({ id: 'd' + n, uid: s[0], name: s[0], text: s[2], emotes: [], hl: n % 5 === 0 });
@@ -961,7 +972,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   /* OBSの画面は表示だけを行う。チャットの取得と翻訳はChromeの画面が担当する */
   if (isObs) return;
   if (engineName === 'builtin') initBuiltin();
-  else status('このブラウザでは翻訳が使えません。パソコンのChrome（最新版）で開いてください。');
+  else status('Translation is not available in this browser. Open this page in the latest Chrome on a computer.');
 
   /* ---- Twitchチャット接続（読み取り専用・ログイン不要） ---- */
   function parseLine(line) {
@@ -994,7 +1005,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
   }
   var retry = 0;
   function connect() {
-    status('#' + channel + ' に接続中…');
+    status('Connecting to #' + channel + '…');
     var ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
     ws.onopen = function () {
       ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands');
@@ -1007,7 +1018,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
         if (!raw) return;
         var m = parseLine(raw);
         if (m.cmd === 'PING') { ws.send('PONG :' + (m.trailing || 'tmi.twitch.tv')); return; }
-        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('#' + channel + ' に接続しました（バージョン 12）', true); return; }
+        if (m.cmd === 'ROOMSTATE' || m.cmd === '366') { retry = 0; twitchUp = true; logUse(); status('Connected to #' + channel + ' (version 13)', true); return; }
         if (m.cmd === 'RECONNECT') { ws.close(); return; }
         if (m.cmd === 'CLEARMSG') { removeWhere('id', m.tags['target-msg-id']); return; }
         if (m.cmd === 'CLEARCHAT') { if (m.tags['target-user-id']) removeWhere('uid', m.tags['target-user-id']); else clearAll(false); return; }
@@ -1026,7 +1037,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
     ws.onclose = function () {
       retry++;
       var wait = Math.min(30, 2 * retry);
-      status('接続が切れました。' + wait + '秒後に再接続します…');
+      status('Disconnected. Reconnecting in ' + wait + ' s…');
       setTimeout(connect, wait * 1000);
     };
     ws.onerror = function () { try { ws.close(); } catch (e) {} };
