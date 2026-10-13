@@ -11,8 +11,9 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' \
+          code=$(curl -s -o body.txt -w '%{http_code}' \
             'https://fpdyjvhmbjyzyxmiwlaa.supabase.co/rest/v1/usage_events?select=id&limit=1' \
             -H 'apikey: sb_publishable_i_ochJ2NZZ0QHLYmUAdClA_WItxfOZO')
-          echo "HTTP $code"
-          test "$code" = 200
+          echo "::notice::HTTP $code $(head -c 200 body.txt)"
+          # Any answer from the database API counts as activity; only fail if unreachable or paused.
+          case "$code" in 2*|401|403|404) exit 0;; *) exit 1;; esac
