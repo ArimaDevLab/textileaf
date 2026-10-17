@@ -368,7 +368,7 @@ footer { padding-block: 28px 44px; font-size: 13px; color: var(--ink-soft); }
       <li><b>Live captions</b>Uses Chrome’s speech recognition. Your mic audio is sent to Google’s speech recognition to be turned into text. If you don’t use captions, the mic stays off.</li>
       <li><b>Relay to OBS</b>Translated messages and captions pass through a relay service (Supabase) to reach your OBS overlay. They are passed along, not stored.</li>
       <li><b>Twitch</b>Chat is read-only. No Twitch login is needed, and Textileaf never posts in your chat.</li>
-      <li><b>Usage stats</b>To see how many people use Textileaf, we record the time, a random ID for your browser, and the theme and display you chose when a preview opens. Channel names, messages and audio are never recorded.</li>
+      <li><b>Usage stats</b>To see how many people use Textileaf, we record the time, a random ID for your browser, and the theme and display you chose when a preview opens. We also count page visits, with the name of the site that linked you here. Channel names, messages and audio are never recorded.</li>
       <li><b>What we don’t collect</b>There are no accounts. We don’t collect names, email addresses or other personal information.</li>
     </ul>
   </section>
@@ -692,5 +692,6 @@ document.documentElement.classList.add('js');
 })();
 
 </script>
+<script src="track.js?v=1" data-page="landing"></script>
 </body>
 </html>
