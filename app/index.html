@@ -305,7 +305,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
       <textarea id="fUrl" readonly></textarea>
     </label>
     <div class="btns"><button type="button" class="sub2" id="btnCopy">Copy URL</button></div>
-    <p class="hint">How it works: open the preview in Chrome and keep that tab open while you stream. Chrome does the translating and captioning, then sends the results to OBS. If you close the Chrome tab, nothing shows up in OBS.</p>
+    <p class="hint">How it works: open the preview in Chrome and keep that tab open while you stream. Chrome does the translating and captioning, then sends the results to OBS. If you close the Chrome tab, nothing shows up in OBS. The first time, press “Download translation data” in the preview, and keep pressing until the button disappears. Chrome may fetch only part of the data per press, so this can take several presses.</p>
     <p class="hint">Using captions? Press “Start captions” in the preview first, then launch OBS. On some computers the mic stays silent for Chrome if OBS grabs it first.</p>
     <p class="hint">In OBS, add Sources → Browser, leave “Local file” unchecked, and paste the URL above. Width 1920 and height 1080 work well. Keep this URL private.</p>
     <p class="hint"><a href="../" style="color:inherit">About Textileaf</a>　<a href="https://www.foriio.com/arimadevlab" target="_blank" rel="noopener" style="color:inherit">Contact</a>　<a href="https://sites.google.com/view/textileaf-privacypolicy/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit">Terms &amp; Privacy</a>　<a href="https://sites.google.com/view/textileaf/%E3%83%9B%E3%83%BC%E3%83%A0" target="_blank" rel="noopener" style="color:inherit" lang="ja">日本語</a></p>
@@ -525,7 +525,7 @@ body.setup { background: #15131d; color: #efedf5; overflow: auto; color-scheme: 
           /* 入手直後の画面では翻訳が使えないことがあるため、読み込み直して確実に使える状態にする */
           status('Translation data ready. Reloading…');
           setTimeout(function () { location.reload(); }, 1500);
-        } else status('Some translation data could not be downloaded. Press the button again.', true);
+        } else status('Downloaded ' + (total - Object.keys(needClick).length - (needDet ? 1 : 0)) + '/' + total + '. This is normal the first time. Press the button again until it disappears.', true);
       });
     });
   }
